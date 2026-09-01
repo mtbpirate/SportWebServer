@@ -25,7 +25,7 @@ public class SchedulerService
 	private void init()
 	{
 		log.info("SchedulerService - init, testvar={}", testvar);
-		if(testvar != 3283)
+		if(testvar != 3283 )
 		{
 			log.warn("SchedulerService - Falsch konfiguriert, testvar={}", testvar);
 			log.warn("---- Programm wird beendet ----");
@@ -33,7 +33,15 @@ public class SchedulerService
 			
 		}
 		
-		testDBConnection();
+		
+		if(!dbConnection.testConnection())
+		{
+			log.warn("SchedulerService - DB connection test failed");
+			log.warn("---- Programm wird beendet ----");
+			System.exit(1);
+		}
+		
+		
 		log.info("SchedulerService - init completed");
 	}
 	
@@ -48,7 +56,7 @@ public class SchedulerService
 	private void testDBConnection() 
 	{
 		log.info("Test DB connection every Minute");
-		//dbConnection.testConnection();
+		dbConnection.testConnection();
 		log.info("TestService - DB connection test completed");
 	}
 	

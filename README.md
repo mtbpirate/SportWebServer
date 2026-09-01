@@ -61,3 +61,17 @@ Bei laufender Anwendung werden Logs in folgende Datei geschrieben:
 - `D:/LOG/SportWebServer.log`
 
 Falls der Ordner `D:/LOG` nicht existiert, bitte vorher anlegen.
+
+
+## Build & Export for use on Server
+
+
+1) File -> Export -> runnable jar -> next
+
+2) "Extract required libraries into generated JAR"  --> Finish
+
+3) jar file auf Server kopieren
+
+3a) lokal starten mit "java -jar sportserver.jar" (im richtigen Ordner"
+
+4) am Server oder lokal "application.properties" anlegen
