@@ -26,7 +26,8 @@ public class SchedulerService
 	private void init()
 	{
 		log.info("SchedulerService - init, testvar={}", testvar);
-		log.info("Test");
+		testDBConnection();
+		log.info("SchedulerService - init completed");
 	}
 	
 	
@@ -40,7 +41,7 @@ public class SchedulerService
 	private void testDBConnection() 
 	{
 		log.info("Test DB connection every Minute");
-		dbConnection.testConnection();
+		//dbConnection.testConnection();
 		log.info("TestService - DB connection test completed");
 	}
 	
