@@ -30,7 +30,7 @@ public class TourController
 	 * Tour nach ID abrufen
 	 */
 	@GetMapping("/touren/{tourId}")
-	public Tour getBikeById(@PathVariable int tourId) 
+	public Tour getBikeById(@PathVariable long tourId) 
 	{
 		return tourService.getTourById(tourId);
 	}
