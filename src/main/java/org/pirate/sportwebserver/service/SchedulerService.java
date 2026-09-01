@@ -21,6 +21,7 @@ public class SchedulerService
 	private void init()
 	{
 		log.info("SchedulerService - init, testvar={}", testvar);
+		log.info("Test");
 	}
 	
 	
