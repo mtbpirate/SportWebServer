@@ -19,12 +19,20 @@ public class SchedulerService
 	private DbConnectionService dbConnection;
 	
 	@Value("${testvar:default-testvar}")
-	private String testvar;
+	private int testvar;
 	
 	@PostConstruct
 	private void init()
 	{
 		log.info("SchedulerService - init, testvar={}", testvar);
+		if(testvar != 3283)
+		{
+			log.warn("SchedulerService - Falsch konfiguriert, testvar={}", testvar);
+			log.warn("---- Programm wird beendet ----");
+			System.exit(1);
+			
+		}
+		
 		testDBConnection();
 		log.info("SchedulerService - init completed");
 	}
