@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
-public class TourController 
+public class TourController
 {
 	@Autowired
 	private TourService tourService;
@@ -21,19 +21,18 @@ public class TourController
 	 * Alle Touren abrufen
 	 */
 	@GetMapping("/touren")
-	public List<Tour> getBikes() 
+	public List<Tour> getBikes()
 	{
 		return tourService.getAllTouren();
 	}
-	
+
 	/**
 	 * Tour nach ID abrufen
 	 */
 	@GetMapping("/touren/{tourId}")
-	public Tour getBikeById(@PathVariable long tourId) 
+	public Tour getBikeById(@PathVariable long tourId)
 	{
 		return tourService.getTourById(tourId);
 	}
-	
-	
+
 }

@@ -1,6 +1,7 @@
 package org.pirate.sportwebserver.dto;
 
-public class Waypoint {
+public class Waypoint
+{
 	//public long idtour;
 	public int zeit;
 	public float distanz;

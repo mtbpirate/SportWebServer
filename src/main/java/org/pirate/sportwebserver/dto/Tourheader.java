@@ -1,6 +1,7 @@
 package org.pirate.sportwebserver.dto;
 
-public class Tourheader {
+public class Tourheader
+{
 	public long idtour;
 	public String datum;
 	public String titel;

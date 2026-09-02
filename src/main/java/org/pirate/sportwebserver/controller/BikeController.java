@@ -15,45 +15,44 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
-public class BikeController 
+public class BikeController
 {
 	@Autowired
 	private BikeService bikeService;
-	
+
 	/**
 	 * Alle Bikes abrufen
 	 */
 	@GetMapping("/bikes")
-	public List<Bike> getBikes() 
+	public List<Bike> getBikes()
 	{
 		return bikeService.getAllBikes();
 	}
-	
+
 	/**
 	 * Bike nach ID abrufen
 	 */
 	@GetMapping("/bikes/{id}")
-	public Bike getBikeById(@PathVariable int id) 
+	public Bike getBikeById(@PathVariable int id)
 	{
 		return bikeService.getBikeById(id);
 	}
-	
+
 	/**
 	 * Neues Bike erstellen
 	 */
 	@PostMapping("/bikes")
-	public Bike createBike(@RequestBody Bike bike) 
+	public Bike createBike(@RequestBody Bike bike)
 	{
 		return bikeService.saveBike(bike);
 	}
-	
+
 	/**
 	 * Bike löschen
 	 */
 	@DeleteMapping("/bikes/{id}")
-	public void deleteBike(@PathVariable int id) 
+	public void deleteBike(@PathVariable int id)
 	{
 		bikeService.deleteBike(id);
 	}
 }
-

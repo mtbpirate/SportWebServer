@@ -9,13 +9,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/greetings")
-public class GreetingController {
+public class GreetingController
+{
 
-    @GetMapping("/{name}")
-    public Map<String, String> greet(@PathVariable String name) {
-        return Map.of("message", "Hallo " + name + ", willkommen auf unserem neuen Webserver!");
-    }
-    
-    
-    
+	@GetMapping("/{name}")
+	public Map<String, String> greet(@PathVariable String name)
+	{
+		return Map.of("message", "Hallo " + name + ", willkommen auf unserem neuen Webserver!");
+	}
+
 }
