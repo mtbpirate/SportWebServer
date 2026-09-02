@@ -10,8 +10,12 @@ import org.pirate.sportwebserver.service.StravaService;
 import org.pirate.sportwebserver.dto.StravaToken;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import jakarta.annotation.PostConstruct;
 
@@ -50,8 +54,14 @@ public class SchedulerService
 			System.exit(1);
 		}
 		
+		refreshStravaTokenIfNeeded();
 		
 		log.info("SchedulerService - init completed");
+		
+		
+		
+		
+		
 	}
 	
 	
@@ -60,50 +70,46 @@ public class SchedulerService
     {
     	log.info("TestService - Running every minute, testvar={}", testvar);
     	testDBConnection();
-
+    	refreshStravaTokenIfNeeded();
 		
     }
 	
 	
-	private void testStrava()
+	
+	private void refreshStravaTokenIfNeeded()
 	{
-		// Wenn StravaService vorhanden ist, versuche die ersten 10 Activities abzurufen und zu loggen
-				if (stravaService != null) {
-											// automatic refresh if token expires within next 5 minutes
-											try {
-												StravaToken t = stravaService.getCurrentToken();
-												if (t != null && t.getExpiresAt() != null) {
-													if (t.getExpiresAt().isBefore(Instant.now().plusSeconds(300))) {
-														log.info("SchedulerService - Strava token expires soon ({}), refreshing...", t.getExpiresAt());
-														try {
-															stravaService.refreshAccessToken();
-															log.info("SchedulerService - Strava token refreshed successfully");
-														} catch (Exception e) {
-															log.error("SchedulerService - Failed to refresh Strava token", e);
-														}
-													}
-												}
-											} catch (Exception e) {
-												log.warn("SchedulerService - Error while checking/refreshing Strava token", e);
-											}
-					try {
-						List<Map<String, Object>> activities = stravaService.getActivities(1, 10);
-						log.info("SchedulerService - Fetched {} Strava activities", activities.size());
-						int i = 0;
-						for (Map<String, Object> act : activities) {
-							i++;
-							log.info("Strava Activity #{}: {}", i, act.toString());
+		log.info("SchedulerService - Checking Strava token expiration");
+		if (stravaService != null) {
+			try {
+				StravaToken t = stravaService.getCurrentToken();
+				if (t != null && t.getExpiresAt() != null) 
+				{
+					int offsetSeconds = ZoneId.systemDefault().getRules().getOffset(Instant.now()).getTotalSeconds();
+					ZonedDateTime deathTime = ZonedDateTime.now().plusSeconds(offsetSeconds).plusMinutes(5);
+					Instant deathTimeInstant = deathTime.toInstant();
+										
+					
+					log.info("SchedulerService - Current Strava token expires at: {}", t.getExpiresAt());
+					log.info("SchedulerService - Current time+5: {}", deathTimeInstant);
+					
+					if (t.getExpiresAt().isBefore(deathTimeInstant)) {
+						log.info("SchedulerService - Strava token expires soon ({}), refreshing...", t.getExpiresAt());
+						try {
+							stravaService.refreshAccessToken();
+							log.info("SchedulerService - Strava token refreshed successfully");
+						} catch (Exception e) {
+							log.error("SchedulerService - Failed to refresh Strava token", e);
 						}
-					} catch (IllegalStateException ise) {
-						// z. B. no token available
-						log.warn("SchedulerService - Strava not authenticated: {}", ise.getMessage());
-					} catch (Exception e) {
-						log.error("SchedulerService - Error fetching Strava activities", e);
 					}
-				} else {
-					log.debug("SchedulerService - StravaService not configured, skipping Strava fetch");
 				}
+			} catch (Exception e) {
+				log.warn("SchedulerService - Error while checking/refreshing Strava token", e);
+			}
+		}
 	}
+	
+	
+	
 	
 	
 	private void testDBConnection() 

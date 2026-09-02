@@ -109,7 +109,12 @@ public class StravaService {
         Number expiresAt = (Number) resp.get("expires_at");
         if (expiresAt != null) token.setExpiresAt(Instant.ofEpochSecond(expiresAt.longValue()));
         Object athlete = resp.get("athlete");
-        if (athlete instanceof Map) {
+        if (athlete == null) 
+        {
+			log.info("No athlete info in Strava token response, cop old ID");
+			token.setAthleteId(currentToken != null ? currentToken.getAthleteId() : null);
+		} 
+        else if (athlete instanceof Map) {
             Map<String, Object> a = (Map<String, Object>) athlete;
             Object id = a.get("id");
             if (id instanceof Number) token.setAthleteId(((Number) id).longValue());
@@ -165,8 +170,8 @@ public class StravaService {
         }
 
         // Use MySQL-style upsert (ON DUPLICATE KEY) assuming UNIQUE constraint on athlete_id
-        String sql = "INSERT INTO STRAVA_TOKENS (athlete_id, access_token, refresh_token, expires_at, raw_response, revoked) VALUES (?, ?, ?, ?, ?, 0) "
-                + "ON DUPLICATE KEY UPDATE access_token = VALUES(access_token), refresh_token = VALUES(refresh_token), expires_at = VALUES(expires_at), raw_response = VALUES(raw_response), revoked = 0, updated_at = CURRENT_TIMESTAMP(3)";
+        String sql = "INSERT INTO STRAVA_TOKENS (ATHLETE_ID,ACCESS_TOKEN, REFRESH_TOKEN,EXPIRES_AT, RAW_RESPONSE, REVOKED) VALUES (?, ?, ?, ?, ?, 0) "
+                + "ON DUPLICATE KEY UPDATE ACCESS_TOKEN = VALUES(ACCESS_TOKEN), REFRESH_TOKEN = VALUES(REFRESH_TOKEN), EXPIRES_AT = VALUES(EXPIRES_AT), RAW_RESPONSE = VALUES(RAW_RESPONSE), REVOKED = 0, UPDATED_AT = CURRENT_TIMESTAMP(3)";
 
         // raw_response left null (could be enhanced to store full JSON)
         dbConnection.executeUpdateWithParams(sql, token.getAthleteId(), token.getAccessToken(), token.getRefreshToken(), expiresAtTs, null);
@@ -175,7 +180,7 @@ public class StravaService {
 
     private StravaToken loadTokenFromDb() throws Exception {
         // Load most recently updated non-revoked token
-        String sql = "SELECT * FROM STRAVA_TOKENS WHERE revoked = 0 ORDER BY updated_at DESC LIMIT 1";
+        String sql = "SELECT * FROM STRAVA_TOKENS WHERE REVOKED = 0 ORDER BY UPDATED_AT DESC LIMIT 1";
         List<Map<String, Object>> rows = dbConnection.executeQuery(sql);
         if (rows == null || rows.isEmpty()) return null;
         Map<String, Object> row = rows.get(0);
