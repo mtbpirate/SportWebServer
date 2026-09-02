@@ -3,7 +3,7 @@ package org.pirate.sportwebserver.controller;
 import java.util.List;
 import java.util.Map;
 import org.pirate.sportwebserver.dto.StravaActivity;
-
+import org.pirate.sportwebserver.dto.StravaAthlete;
 import org.pirate.sportwebserver.dto.StravaToken;
 import org.pirate.sportwebserver.service.StravaService;
 import org.slf4j.Logger;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
@@ -83,5 +84,35 @@ public class StravaController
 		if (token == null)
 			return ResponseEntity.ok(Map.of("authenticated", false));
 		return ResponseEntity.ok(token);
+	}
+
+	@GetMapping("/activity/{id}")
+	public ResponseEntity<?> getActivity(@PathVariable(name = "id") long activityId)
+	{
+		try
+		{
+			StravaActivity activity = stravaService.getActivityById(activityId);
+			return ResponseEntity.ok(activity);
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to get activity with ID {}", activityId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	@GetMapping("/athlete/{id}")
+	public ResponseEntity<?> getAthlete(@PathVariable(name = "id") long athleteId)
+	{
+		try
+		{
+			StravaAthlete athlete = stravaService.getAthlete(athleteId);
+			return ResponseEntity.ok(athlete);
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to get athlete with ID {}", athleteId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+		}
 	}
 }

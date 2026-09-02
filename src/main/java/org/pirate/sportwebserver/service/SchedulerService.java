@@ -62,7 +62,14 @@ public class SchedulerService
 	@Scheduled(cron = "0 * * * * *")
 	public void everyMinute()
 	{
-		log.info("TestService - Running every minute, testvar={}", testvar);
+		log.info("TestService - Running every minute");
+		
+	}
+	
+	@Scheduled(cron = "0 */5 * * * *")
+	public void every5Minute()
+	{
+		log.info("TestService - Running every 5 minutes");
 		testDBConnection();
 		refreshStravaTokenIfNeeded();
 
@@ -79,11 +86,11 @@ public class SchedulerService
 				if (t != null && t.getExpiresAt() != null)
 				{
 					int offsetSeconds = ZoneId.systemDefault().getRules().getOffset(Instant.now()).getTotalSeconds();
-					ZonedDateTime deathTime = ZonedDateTime.now().plusSeconds(offsetSeconds).plusMinutes(5);
+					ZonedDateTime deathTime = ZonedDateTime.now().plusSeconds(offsetSeconds).plusMinutes(10);
 					Instant deathTimeInstant = deathTime.toInstant();
 
 					log.info("SchedulerService - Current Strava token expires at: {}", t.getExpiresAt());
-					log.info("SchedulerService - Current time+5: {}", deathTimeInstant);
+					log.info("SchedulerService - Current time+10: {}", deathTimeInstant);
 
 					if (t.getExpiresAt().isBefore(deathTimeInstant))
 					{
