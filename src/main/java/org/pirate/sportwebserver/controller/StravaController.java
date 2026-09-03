@@ -2,9 +2,9 @@ package org.pirate.sportwebserver.controller;
 
 import java.util.List;
 import java.util.Map;
-import org.pirate.sportwebserver.dto.StravaActivity;
-import org.pirate.sportwebserver.dto.StravaAthlete;
-import org.pirate.sportwebserver.dto.StravaToken;
+import org.pirate.sportwebserver.dto.strava.StravaActivity;
+import org.pirate.sportwebserver.dto.strava.StravaAthlete;
+import org.pirate.sportwebserver.dto.strava.StravaToken;
 import org.pirate.sportwebserver.service.StravaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

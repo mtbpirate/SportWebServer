@@ -6,9 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.pirate.sportwebserver.dto.strava.StravaToken;
 import org.pirate.sportwebserver.service.StravaService;
-import org.pirate.sportwebserver.dto.StravaToken;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;

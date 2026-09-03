@@ -1,4 +1,4 @@
-package org.pirate.sportwebserver.dto;
+package org.pirate.sportwebserver.dto.strava;
 
 import java.io.Serializable;
 import java.time.Instant;
