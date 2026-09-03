@@ -6,9 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-import org.pirate.sportwebserver.dto.strava.StravaActivity;
-import org.pirate.sportwebserver.dto.strava.StravaAthlete;
-import org.pirate.sportwebserver.dto.strava.StravaToken;
+
+import org.pirate.sportwebserver.dto.strava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -256,6 +255,132 @@ public class StravaService
 		}
 		return token;
 	}
+
+	public List<StravaTrackPoint> getActivityStream(long activityId)
+	{
+		if (currentToken == null || currentToken.getAccessToken() == null)
+		{
+			throw new IllegalStateException("No access token available. Authenticate first.");
+		}
+		try
+		{
+			String url = String.format("https://www.strava.com/api/v3/activities/%d/streams?keys=latlng,distance,time,altitude,heartrate,watts,velocity_smooth&key_by_type=true", activityId);
+			HttpHeaders headers = new HttpHeaders();
+			headers.setBearerAuth(currentToken.getAccessToken());
+			headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+			org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+			org.springframework.http.ResponseEntity<Map> response = rest.exchange(url,
+				org.springframework.http.HttpMethod.GET, entity, Map.class);
+			Map<String, Object> resp = response.getBody();
+			if (resp == null)
+				throw new RuntimeException("Empty response from Strava activity streams endpoint");
+
+			log.info("Fetched activity streams for activity {} from Strava", activityId);
+
+			List<List<Double>> latlng = getData(resp, "latlng");
+
+			List<Double> distance =
+				getData(resp, "distance");
+
+			List<Integer> time =
+				getData(resp, "time");
+
+			List<Double> altitude =
+				getData(resp, "altitude");
+
+			List<Integer> heartrate =
+				getData(resp, "heartrate");
+
+			List<Integer> watts =
+				getData(resp, "watts");
+
+			List<Double> velocity =
+				getData(resp, "velocity_smooth");
+
+			List<Integer> temp =
+				getData(resp, "temp");
+
+			List<Integer> cadence =
+				getData(resp, "cadence");
+
+			int count = latlng.size();
+
+			List<StravaTrackPoint> result =
+				new ArrayList<>(count);
+
+			for (int i = 0; i < count; i++)
+			{
+				StravaTrackPoint point =
+					new StravaTrackPoint();
+
+				point.setLatitude(
+					latlng.get(i).get(0));
+
+				point.setLongitude(
+					latlng.get(i).get(1));
+
+				if (time != null && i < time.size())
+					point.setTime(time.get(i));
+
+				if (distance != null && i < distance.size())
+					point.setDistance(distance.get(i));
+
+				if (altitude != null && i < altitude.size())
+					point.setAltitude(altitude.get(i));
+
+				if (heartrate != null && i < heartrate.size())
+					point.setHeartrate(heartrate.get(i));
+
+				if (watts != null && i < watts.size())
+					point.setWatts(watts.get(i));
+
+				if (velocity != null && i < velocity.size())
+					point.setVelocity(velocity.get(i));
+
+				if (temp != null && i < temp.size())
+					point.setTemperature(temp.get(i));
+
+				if (cadence != null && i < cadence.size())
+					point.setCadence(cadence.get(i));
+
+				result.add(point);
+			}
+
+			log.info(
+				"Fetched {} trackpoints for activity {}",
+				result.size(),
+				activityId);
+
+			return result;
+
+
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to fetch activity streams for activity ID {}", activityId, e);
+			throw new RuntimeException("Failed to fetch activity streams for activity ID " + activityId, e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> List<T> getData(
+		Map<String, Object> root,
+		String key)
+	{
+		Object stream = root.get(key);
+
+		if (stream == null)
+		{
+			return Collections.emptyList();
+		}
+
+		Map<String, Object> map =
+			(Map<String, Object>) stream;
+
+		return (List<T>) map.get("data");
+	}
+
 
 	public List<StravaActivity> getActivities(int page, int perPage)
 	{
@@ -829,9 +954,48 @@ public class StravaService
             ? latlng.get(1)
             : null;
     }
-	
-	
-	
-	
+
+
+
+	public List<StravaTrackPoint> createTrackPoints(
+		ActivityStreams streams) {
+
+		List<StravaTrackPoint> result = new ArrayList<>();
+
+		int count = streams.getTime().getData().size();
+
+		for (int i = 0; i < count; i++) {
+
+			StravaTrackPoint p = new StravaTrackPoint();
+
+			p.setTime(
+				streams.getTime().getData().get(i));
+
+			p.setDistance(
+				streams.getDistance().getData().get(i));
+
+			p.setAltitude(
+				streams.getAltitude().getData().get(i));
+
+			p.setHeartrate(
+				streams.getHeartrate().getData().get(i));
+
+			p.setWatts(
+				streams.getWatts().getData().get(i));
+
+			p.setVelocity(
+				streams.getVelocity_smooth().getData().get(i));
+
+			List<Double> latlng =
+				streams.getLatlng().getData().get(i);
+
+			p.setLatitude(latlng.get(0));
+			p.setLongitude(latlng.get(1));
+
+			result.add(p);
+		}
+
+		return result;
+	}
 	
 }

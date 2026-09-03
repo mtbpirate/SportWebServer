@@ -5,6 +5,7 @@ import java.util.Map;
 import org.pirate.sportwebserver.dto.strava.StravaActivity;
 import org.pirate.sportwebserver.dto.strava.StravaAthlete;
 import org.pirate.sportwebserver.dto.strava.StravaToken;
+import org.pirate.sportwebserver.dto.strava.StravaTrackPoint;
 import org.pirate.sportwebserver.service.StravaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,6 +101,22 @@ public class StravaController
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
 		}
 	}
+
+	@GetMapping("/trackpoints/{id}")
+	public ResponseEntity<?> getTrackpoints(@PathVariable(name = "id") long activityId)
+	{
+		try
+		{
+			List<StravaTrackPoint> trackpoints = stravaService.getActivityStream(activityId);
+			return ResponseEntity.ok(trackpoints);
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to get trackpoints with ID {}", activityId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+		}
+	}
+
 
 	@GetMapping("/athlete/{id}")
 	public ResponseEntity<?> getAthlete(@PathVariable(name = "id") long athleteId)
