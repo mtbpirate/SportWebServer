@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.pirate.sportwebserver.dto.strava.StravaActivity;
 import org.pirate.sportwebserver.dto.strava.StravaToken;
 import org.pirate.sportwebserver.service.StravaService;
 import java.time.Instant;
@@ -33,6 +34,8 @@ public class SchedulerService
 	@Value("${testvar:default-testvar}")
 	private int testvar;
 
+	private long lastStravaImportTime = 0;
+	
 	@PostConstruct
 	private void init()
 	{
@@ -62,9 +65,13 @@ public class SchedulerService
 	public void everyMinute()
 	{
 		log.info("TestService - Running every minute");
+		importStravaActivities();
+		
 		
 	}
 	
+	
+
 	@Scheduled(cron = "0 */5 * * * *")
 	public void every5Minute()
 	{
@@ -119,5 +126,36 @@ public class SchedulerService
 		dbConnection.testConnection();
 		log.info("TestService - DB connection test completed");
 	}
+	
+	
+	private void importStravaActivities()
+	{
+		if (lastStravaImportTime == 0) lastStravaImportTime =  System.currentTimeMillis() / 1000L;
+	
+		long timefrom = lastStravaImportTime-3600*24*30; // 1 month back
+		List<StravaActivity> activities = stravaService.getActivities(timefrom, lastStravaImportTime);
+		
+		for (StravaActivity activity : activities)
+		{
+			log.info("Importing Strava activity: {}", activity);
+			if (stravaService.existsStravaActivityinDB(activity.getId()))
+			{
+				log.info("Strava activity {} already exists in DB, skipping", activity.getId());
+				lastStravaImportTime = Math.min(lastStravaImportTime, activity.getStartDate().getEpochSecond());
+			}
+			else
+			{
+				stravaService.saveActivityToDb(activity);
+				log.info("Strava activity {} inserted into DB", activity.getId());
+				lastStravaImportTime = Math.min(lastStravaImportTime, activity.getStartDate().getEpochSecond());
+			}	
+		}
+		
+		
+		
+		
+	}
+	
+	
 
 }

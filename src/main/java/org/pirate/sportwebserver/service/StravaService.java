@@ -382,6 +382,48 @@ public class StravaService
 	}
 
 
+	public List<StravaActivity> getActivities(long timeFrom, long timeTo)
+	{
+		if (currentToken == null || currentToken.getAccessToken() == null)
+		{
+			throw new IllegalStateException("No access token available. Authenticate first.");
+		}
+		try
+		{
+			String url = String.format("https://www.strava.com/api/v3/athlete/activities?after=%d&befor=%d",timeFrom, timeTo);
+			HttpHeaders headers = new HttpHeaders();
+			headers.setBearerAuth(currentToken.getAccessToken());
+			headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+			org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+			org.springframework.http.ResponseEntity<List> response = rest.exchange(url,
+				org.springframework.http.HttpMethod.GET, entity, List.class);
+			List<Map<String, Object>> resp = response.getBody();
+			if (resp == null)
+				return Collections.emptyList();
+
+			List<StravaActivity> activities = new ArrayList<>();
+			for (Object o : resp)
+			{
+				if (!(o instanceof Map))
+					continue;
+				@SuppressWarnings("unchecked")
+				Map<String, Object> m = (Map<String, Object>) o;
+				StravaActivity a = mapToStravaActivity(m);
+				activities.add(a);
+			}
+			return activities;
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to fetch activities", e);
+			throw new RuntimeException("Failed to fetch activities", e);
+		}
+	}
+
+	
+	
+	
 	public List<StravaActivity> getActivities(int page, int perPage)
 	{
 		if (currentToken == null || currentToken.getAccessToken() == null)
@@ -996,6 +1038,27 @@ public class StravaService
 		}
 
 		return result;
+	}
+
+	public boolean existsStravaActivityinDB(Long id)
+	{
+		String sql = "SELECT * FROM STRAVA_ACTIVITY WHERE ID = " + id;
+		
+		 try
+		{
+			List<Map<String, Object>>  x = this.dbConnection.executeQuery(sql);
+			if(x != null && !x.isEmpty())
+			{
+				return true;
+			}
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+		return false;
 	}
 	
 }
