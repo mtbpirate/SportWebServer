@@ -67,6 +67,7 @@ public class StravaActivity implements Serializable
 
 	// Other metrics
 	private Double calories;
+	private Integer sufferscore; // Strava's Suffer Score
 	private Integer achievementCount;
 	private Integer kudosCount;
 	private Integer commentCount;
@@ -176,6 +177,16 @@ public class StravaActivity implements Serializable
 	public void setMovingTime(Integer movingTime)
 	{
 		this.movingTime = movingTime;
+	}
+
+	public Integer getSufferScore()
+	{
+		return sufferscore;
+	}
+
+	public void setSufferScore(Integer sufferscore)
+	{
+		this.sufferscore = sufferscore;
 	}
 
 	public Integer getElapsedTime()

@@ -57,6 +57,8 @@ public class SchedulerService
 
 		refreshStravaTokenIfNeeded();
 
+		importStravaActivities();
+
 		log.info("SchedulerService - init completed");
 
 	}
@@ -138,17 +140,15 @@ public class SchedulerService
 		for (StravaActivity activity : activities)
 		{
 			log.info("Importing Strava activity: {}", activity);
-			if (stravaService.existsStravaActivityinDB(activity.getId()))
+			if(stravaService.importStravaActivityToDB(activity.getId()))
 			{
-				log.info("Strava activity {} already exists in DB, skipping", activity.getId());
-				lastStravaImportTime = Math.min(lastStravaImportTime, activity.getStartDate().getEpochSecond());
+				log.info("Strava activity imported successfully: {}", activity.getId());
+				break;
 			}
 			else
 			{
-				stravaService.saveActivityToDb(activity);
-				log.info("Strava activity {} inserted into DB", activity.getId());
-				lastStravaImportTime = Math.min(lastStravaImportTime, activity.getStartDate().getEpochSecond());
-			}	
+				log.warn("Failed to import Strava activity: {}", activity.getId());
+			}
 		}
 		
 		

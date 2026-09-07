@@ -491,7 +491,6 @@ public class StravaService
 
 			StravaActivity activity = mapToStravaActivity(resp);
 			log.info("Fetched activity {} from Strava", activityId);
-			saveActivityToDb(activity);
 			return activity;
 		}
 		catch (Exception e)
@@ -562,6 +561,11 @@ public class StravaService
 		Object elevHigh = m.get("elev_high");
 		if (elevHigh instanceof Number)
 			a.setElevHigh(((Number) elevHigh).doubleValue());
+
+		Object sufferScore = m.get("suffer_score");
+		if (sufferScore instanceof Number)
+			a.setSufferScore(((Number) sufferScore).intValue());
+
 
 		Object elevLow = m.get("elev_low");
 		if (elevLow instanceof Number)
@@ -896,7 +900,7 @@ public class StravaService
                 LOCATION_STATE, LOCATION_COUNTRY, START_LATITUDE, START_LONGITUDE, END_LATITUDE, END_LONGITUDE, AVERAGE_SPEED, MAX_SPEED, AVERAGE_WATTS, MAX_WATTS,
                 WEIGHTED_AVERAGE_WATTS, AVERAGE_HEARTRATE, MAX_HEARTRATE, AVERAGE_TEMP, AVERAGE_CADENCE, CALORIES, ACHIEVEMENT_COUNT, KUDOS_COUNT, COMMENT_COUNT, ATHLETE_COUNT,
                 PHOTO_COUNT, GEAR_ID, GEAR_NAME, TRAINER, COMMUTE, MANUAL, PRIVATE_FLAG, FLAGGED, VISIBILITY, DEVICE_NAME,
-                EMBED_TOKEN, RESOURCE_STATE, SPLIT_COUNT,  LAP_COUNT, SEGMENT_EFFORT_COUNT
+                EMBED_TOKEN, RESOURCE_STATE, SPLIT_COUNT,  LAP_COUNT, SEGMENT_EFFORT_COUNT, SUFFER_SCORE
             )
             VALUES
             (
@@ -905,7 +909,7 @@ public class StravaService
                 ?,?,?,?,?,?,?,?,?,?,
                 ?,?,?,?,?,?,?,?,?,?,
                 ?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?
+                ?,?,?,?,?,?
             )
             """;
 
@@ -973,7 +977,8 @@ public class StravaService
 			    a.getResourceState(),
 			    a.getSplitCount(),
 			    a.getLapCount(),
-			    a.getSegmentEffortCount()
+			    a.getSegmentEffortCount(),
+				a.getSufferScore()
 			);
 		}
 		catch (Exception e)
@@ -1040,7 +1045,7 @@ public class StravaService
 		return result;
 	}
 
-	public boolean existsStravaActivityinDB(Long id)
+	public boolean existsStravaActivityinDB(long id)
 	{
 		String sql = "SELECT * FROM STRAVA_ACTIVITY WHERE ID = " + id;
 		
@@ -1060,5 +1065,84 @@ public class StravaService
 		}
 		return false;
 	}
-	
+
+
+	public boolean importStravaActivityToDB(long id)
+	{
+		if(!existsStravaActivityinDB(id))
+		{
+			StravaActivity a = getActivityById(id);
+			List<StravaTrackPoint> trackpoints = getActivityStream(id);
+
+			saveActivityToDb(a);
+			saveTrackPointsToDb(id, trackpoints);
+			log.info("Strava activity {} imported to DB", id);
+		}
+		else
+		{
+			log.info("Strava activity {} already exists in DB, skipping import", id);
+			return false;
+		}
+		return true;
+	}
+
+	private void saveTrackPointsToDb(long id, List<StravaTrackPoint> trackpoints)
+	{
+
+		//String sqlx = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?, ?)";
+		String sqlx = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE) VALUES ";
+		StringBuilder sql = new StringBuilder();
+		sql.append(sqlx);
+		boolean first = true;
+		for (StravaTrackPoint p : trackpoints)
+		{
+			if(first)
+			{
+				first=false;
+			}
+			else
+			{
+				sql.append(", ");
+			}
+
+			sql.append("( ").append(id).append(", ")
+				.append(p.getTime()).append(", ")
+				.append(p.getDistance()).append(", ")
+				.append(p.getAltitude()).append(", ")
+				.append(p.getHeartrate()).append(", ")
+				.append(p.getWatts()).append(", ")
+				.append(p.getVelocity()).append(", ")
+				.append(p.getLatitude()).append(", ")
+				.append(p.getLongitude()).append(", ")
+				.append(p.getTemperature()).append(")");
+
+		}
+
+		try
+		{
+			dbConnection.executeUpdate(sql.toString());
+			log.info("Saved {} trackpoints for activity {} to DB", trackpoints.size(), id);
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to save trackpoints for activity {} to DB", id, e);
+		}
+
+
+		/*
+		try
+		{
+			for (StravaTrackPoint p : trackpoints)
+			{
+				dbConnection.executeUpdateWithParams(sql, id, p.getTime(), p.getDistance(), p.getAltitude(),
+					p.getHeartrate(), p.getWatts(), p.getVelocity(), p.getLatitude(), p.getLongitude(), p.getTemperature());
+			}
+			log.info("Saved {} trackpoints for activity {} to DB", trackpoints.size(), id);
+		}
+		catch (Exception e)
+		{
+			log.error("Failed to save trackpoints for activity {} to DB", id, e);
+		}'*/
+	}
+
 }
