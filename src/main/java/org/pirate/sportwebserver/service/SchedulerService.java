@@ -57,8 +57,8 @@ public class SchedulerService
 
 		refreshStravaTokenIfNeeded();
 
-		importStravaActivities();
-
+		//importStravaActivities();
+		xx();
 		log.info("SchedulerService - init completed");
 
 	}
@@ -67,8 +67,8 @@ public class SchedulerService
 	public void everyMinute()
 	{
 		log.info("TestService - Running every minute");
-		importStravaActivities();
-		
+		//importStravaActivities();
+		xx();
 		
 	}
 	
@@ -128,6 +128,33 @@ public class SchedulerService
 		dbConnection.testConnection();
 		log.info("TestService - DB connection test completed");
 	}
+
+	private void xx()
+	{
+		try
+		{
+			String sql = "SELECT STRAVAID FROM TOURDATEN " +
+				" WHERE STRAVAID > 0 AND STRAVAID NOT IN (SELECT ID FROM STRAVA_ACTIVITY) " +
+				" ORDER BY 1 ";
+			List<Map<String,Object>> list = dbConnection.executeQuery(sql);
+
+
+			for (Map<String,Object> row : list)
+			{
+				Long stravaId = (Long) row.get("STRAVAID");
+				log.info("StravaID not in STRAVA_ACTIVITY: {}", stravaId);
+
+				stravaService.importStravaActivityToDB(stravaId);
+				break;
+			}
+
+
+		}
+		catch (Exception e)
+		{
+			log.error("SchedulerService - Error executing query", e);
+		}
+	}
 	
 	
 	private void importStravaActivities()
@@ -136,19 +163,19 @@ public class SchedulerService
 	
 		long timefrom = lastStravaImportTime-3600*24*30; // 1 month back
 		List<StravaActivity> activities = stravaService.getActivities(timefrom, lastStravaImportTime);
-		
+		int anzahl = 0;
 		for (StravaActivity activity : activities)
 		{
 			log.info("Importing Strava activity: {}", activity);
 			if(stravaService.importStravaActivityToDB(activity.getId()))
 			{
+
 				log.info("Strava activity imported successfully: {}", activity.getId());
-				break;
+				anzahl++;
+				if(anzahl >= 10) break;
+
 			}
-			else
-			{
-				log.warn("Failed to import Strava activity: {}", activity.getId());
-			}
+			lastStravaImportTime = Math.min(lastStravaImportTime, activity.getStartDate().getEpochSecond());
 		}
 		
 		

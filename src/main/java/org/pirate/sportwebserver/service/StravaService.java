@@ -1089,60 +1089,78 @@ public class StravaService
 	private void saveTrackPointsToDb(long id, List<StravaTrackPoint> trackpoints)
 	{
 
-		//String sqlx = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE) VALUES (?, ?, ?, ?, ?,?, ?, ?, ?, ?)";
-		String sqlx = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE) VALUES ";
+		String sqlBeginn = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE) VALUES ";
 		StringBuilder sql = new StringBuilder();
-		sql.append(sqlx);
+		List<Integer> savedTimes = new ArrayList<>();
+
 		boolean first = true;
+		int i=0;
+		int anzahlGesamt=0;
 		for (StravaTrackPoint p : trackpoints)
 		{
-			if(first)
+
+
+			if(savedTimes.contains(p.getTime()))
 			{
-				first=false;
+				log.warn("Duplicate trackpoint time {} for activity {}, skipping", p.getTime(), id);
+
 			}
 			else
 			{
-				sql.append(", ");
+				if(first)
+				{
+					sql = new StringBuilder();
+					sql.append(sqlBeginn);
+					first=false;
+				}
+				else
+				{
+					sql.append(", ");
+				}
+
+				sql.append("( ").append(id).append(", ")
+					.append(p.getTime()).append(", ")
+					.append(p.getDistance()).append(", ")
+					.append(p.getAltitude()).append(", ")
+					.append(p.getHeartrate()).append(", ")
+					.append(p.getWatts()).append(", ")
+					.append(p.getVelocity()).append(", ")
+					.append(p.getLatitude()).append(", ")
+					.append(p.getLongitude()).append(", ")
+					.append(p.getTemperature()).append(")");
+				i++;
+				savedTimes.add(p.getTime());
 			}
 
-			sql.append("( ").append(id).append(", ")
-				.append(p.getTime()).append(", ")
-				.append(p.getDistance()).append(", ")
-				.append(p.getAltitude()).append(", ")
-				.append(p.getHeartrate()).append(", ")
-				.append(p.getWatts()).append(", ")
-				.append(p.getVelocity()).append(", ")
-				.append(p.getLatitude()).append(", ")
-				.append(p.getLongitude()).append(", ")
-				.append(p.getTemperature()).append(")");
-
-		}
-
-		try
-		{
-			dbConnection.executeUpdate(sql.toString());
-			log.info("Saved {} trackpoints for activity {} to DB", trackpoints.size(), id);
-		}
-		catch (Exception e)
-		{
-			log.error("Failed to save trackpoints for activity {} to DB", id, e);
-		}
-
-
-		/*
-		try
-		{
-			for (StravaTrackPoint p : trackpoints)
+			if (i>=1000)
 			{
-				dbConnection.executeUpdateWithParams(sql, id, p.getTime(), p.getDistance(), p.getAltitude(),
-					p.getHeartrate(), p.getWatts(), p.getVelocity(), p.getLatitude(), p.getLongitude(), p.getTemperature());
+				anzahlGesamt += insertTrackpoints(sql);
+
+				i=0;
+				first = true;
 			}
-			log.info("Saved {} trackpoints for activity {} to DB", trackpoints.size(), id);
+		}
+
+		if(i>0)
+		{
+			anzahlGesamt += insertTrackpoints(sql);
+		}
+		log.info("Inserted {} trackpoints for activity {}", anzahlGesamt, id);
+
+	}
+
+	private int insertTrackpoints(  StringBuilder sql)
+	{
+		int anzahl =0;
+		try
+		{
+			anzahl = dbConnection.executeUpdate(sql.toString());
 		}
 		catch (Exception e)
 		{
-			log.error("Failed to save trackpoints for activity {} to DB", id, e);
-		}'*/
+			log.error("Failed to save trackpoints ", e);
+		}
+		return anzahl;
 	}
 
 }
