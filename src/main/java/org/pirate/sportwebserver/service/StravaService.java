@@ -1,28 +1,26 @@
 package org.pirate.sportwebserver.service;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-
+import jakarta.annotation.PostConstruct;
 import org.pirate.sportwebserver.dto.strava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.PostConstruct;
-import java.sql.Timestamp;
-
-import org.pirate.sportwebserver.service.DbConnectionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class StravaService
@@ -264,7 +262,9 @@ public class StravaService
 		}
 		try
 		{
-			String url = String.format("https://www.strava.com/api/v3/activities/%d/streams?keys=latlng,distance,time,altitude,heartrate,watts,velocity_smooth&key_by_type=true", activityId);
+			String url = String.format(
+				"https://www.strava.com/api/v3/activities/%d/streams?keys=latlng,cadence,distance,time,altitude,heartrate,watts,temp,velocity_smooth,grade_smooth&key_by_type=true",
+				activityId);
 			HttpHeaders headers = new HttpHeaders();
 			headers.setBearerAuth(currentToken.getAccessToken());
 			headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -279,35 +279,22 @@ public class StravaService
 			log.info("Fetched activity streams for activity {} from Strava", activityId);
 
 			List<List<Double>> latlng = getData(resp, "latlng");
-
-			List<Double> distance =
-				getData(resp, "distance");
-
-			List<Integer> time =
-				getData(resp, "time");
-
-			List<Double> altitude =
-				getData(resp, "altitude");
-
-			List<Integer> heartrate =
-				getData(resp, "heartrate");
-
-			List<Integer> watts =
-				getData(resp, "watts");
-
-			List<Double> velocity =
-				getData(resp, "velocity_smooth");
-
-			List<Integer> temp =
-				getData(resp, "temp");
-
-			List<Integer> cadence =
-				getData(resp, "cadence");
+			List<Double> distance = getData(resp, "distance");
+			List<Integer> time = getData(resp, "time");
+			List<Double> altitude = getData(resp, "altitude");
+			List<Integer> heartrate = getData(resp, "heartrate");
+			List<Integer> watts = getData(resp, "watts");
+			List<Double> velocity = getData(resp, "velocity_smooth");
+			List<Integer> temp = getData(resp, "temp");
+			List<Integer> cadence = getData(resp, "cadence");
+			List<Double> grade = getData(resp, "grade_smooth");
 
 			int count = latlng.size();
 
 			List<StravaTrackPoint> result =
 				new ArrayList<>(count);
+
+			List<Integer> timelist = new ArrayList<>();
 
 			for (int i = 0; i < count; i++)
 			{
@@ -332,9 +319,6 @@ public class StravaService
 				if (heartrate != null && i < heartrate.size())
 					point.setHeartrate(heartrate.get(i));
 
-				if (watts != null && i < watts.size())
-					point.setWatts(watts.get(i));
-
 				if (velocity != null && i < velocity.size())
 					point.setVelocity(velocity.get(i));
 
@@ -344,7 +328,23 @@ public class StravaService
 				if (cadence != null && i < cadence.size())
 					point.setCadence(cadence.get(i));
 
-				result.add(point);
+				if (grade != null && i < grade.size())
+					point.setGrade(grade.get(i));
+
+				if (watts != null && i < watts.size())
+					point.setWatts(watts.get(i));
+
+				//doppelte Einträge: Strava sometimes returns duplicate time values, which can cause issues. We will log a warning and skip duplicates.
+				if (timelist.contains(point.getTime()))
+				{
+					log.warn("Duplicate time value found: {} for activity {}", point.getTime(), activityId);
+				}
+				else
+				{
+					timelist.add(point.getTime());
+					result.add(point);
+				}
+
 			}
 
 			log.info(
@@ -353,7 +353,6 @@ public class StravaService
 				activityId);
 
 			return result;
-
 
 		}
 		catch (Exception e)
@@ -381,7 +380,6 @@ public class StravaService
 		return (List<T>) map.get("data");
 	}
 
-
 	public List<StravaActivity> getActivities(long timeFrom, long timeTo)
 	{
 		if (currentToken == null || currentToken.getAccessToken() == null)
@@ -390,7 +388,7 @@ public class StravaService
 		}
 		try
 		{
-			String url = String.format("https://www.strava.com/api/v3/athlete/activities?after=%d&befor=%d",timeFrom, timeTo);
+			String url = String.format("https://www.strava.com/api/v3/athlete/activities?after=%d&befor=%d", timeFrom, timeTo);
 			HttpHeaders headers = new HttpHeaders();
 			headers.setBearerAuth(currentToken.getAccessToken());
 			headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -421,9 +419,6 @@ public class StravaService
 		}
 	}
 
-	
-	
-	
 	public List<StravaActivity> getActivities(int page, int perPage)
 	{
 		if (currentToken == null || currentToken.getAccessToken() == null)
@@ -515,7 +510,8 @@ public class StravaService
 				a.setId(Long.parseLong((String) id));
 			}
 			catch (Exception ex)
-			{}
+			{
+			}
 		}
 
 		if (m.get("external_id") != null)
@@ -566,7 +562,6 @@ public class StravaService
 		if (sufferScore instanceof Number)
 			a.setSufferScore(((Number) sufferScore).intValue());
 
-
 		Object elevLow = m.get("elev_low");
 		if (elevLow instanceof Number)
 			a.setElevLow(((Number) elevLow).doubleValue());
@@ -591,7 +586,8 @@ public class StravaService
 			}
 			catch (Exception ex)
 			{
-				/* ignore */ }
+				/* ignore */
+			}
 		}
 
 		Object sdl = m.get("start_date_local");
@@ -603,7 +599,8 @@ public class StravaService
 			}
 			catch (Exception ex)
 			{
-				/* ignore */ }
+				/* ignore */
+			}
 		}
 
 		if (m.get("timezone") != null)
@@ -650,6 +647,9 @@ public class StravaService
 		Object weightedAvgWatts = m.get("weighted_average_watts");
 		if (weightedAvgWatts instanceof Number)
 			a.setWeightedAverageWatts(((Number) weightedAvgWatts).doubleValue());
+
+		if (m.get("device_watts") instanceof Boolean)
+			a.setDeviceWatts((Boolean) m.get("device_watts"));
 
 		// Heart rate metrics
 		Object avgHr = m.get("average_heartrate");
@@ -803,7 +803,8 @@ public class StravaService
 				athlete.setId(Long.parseLong((String) id));
 			}
 			catch (Exception ex)
-			{}
+			{
+			}
 		}
 
 		// basic info
@@ -843,7 +844,8 @@ public class StravaService
 			}
 			catch (Exception ex)
 			{
-				/* ignore */ }
+				/* ignore */
+			}
 		}
 		Object updatedAt = m.get("updated_at");
 		if (updatedAt instanceof String)
@@ -854,7 +856,8 @@ public class StravaService
 			}
 			catch (Exception ex)
 			{
-				/* ignore */ }
+				/* ignore */
+			}
 		}
 
 		// profile pictures
@@ -886,99 +889,98 @@ public class StravaService
 
 		return athlete;
 	}
-	
-	
-    public void saveActivityToDb(StravaActivity a)
-    {
-        
-    	String sql =
-            """
-            INSERT INTO STRAVA_ACTIVITY
-            (
-                ID, EXTERNAL_ID, UPLOAD_ID, ATHLETE_ID, NAME, DESCRIPTION, DISTANCE, MOVING_TIME, ELAPSED_TIME, TOTAL_ELEVATION_GAIN,
-                ELEV_HIGH, ELEV_LOW, TYPE, SPORT_TYPE, WORKOUT_TYPE, START_DATE, START_DATE_LOCAL, TIMEZONE, UTC_OFFSET, LOCATION_CITY,
-                LOCATION_STATE, LOCATION_COUNTRY, START_LATITUDE, START_LONGITUDE, END_LATITUDE, END_LONGITUDE, AVERAGE_SPEED, MAX_SPEED, AVERAGE_WATTS, MAX_WATTS,
-                WEIGHTED_AVERAGE_WATTS, AVERAGE_HEARTRATE, MAX_HEARTRATE, AVERAGE_TEMP, AVERAGE_CADENCE, CALORIES, ACHIEVEMENT_COUNT, KUDOS_COUNT, COMMENT_COUNT, ATHLETE_COUNT,
-                PHOTO_COUNT, GEAR_ID, GEAR_NAME, TRAINER, COMMUTE, MANUAL, PRIVATE_FLAG, FLAGGED, VISIBILITY, DEVICE_NAME,
-                EMBED_TOKEN, RESOURCE_STATE, SPLIT_COUNT,  LAP_COUNT, SEGMENT_EFFORT_COUNT, SUFFER_SCORE
-            )
-            VALUES
-            (
-                ?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?
-            )
-            """;
 
-    	
-    	try
+	public void saveActivityToDb(StravaActivity a)
+	{
+
+		String sql =
+			"""
+				INSERT INTO STRAVA_ACTIVITY
+				(
+				    ID, EXTERNAL_ID, UPLOAD_ID, ATHLETE_ID, NAME, DESCRIPTION, DISTANCE, MOVING_TIME, ELAPSED_TIME, TOTAL_ELEVATION_GAIN,
+				    ELEV_HIGH, ELEV_LOW, TYPE, SPORT_TYPE, WORKOUT_TYPE, START_DATE, START_DATE_LOCAL, TIMEZONE, UTC_OFFSET, LOCATION_CITY,
+				    LOCATION_STATE, LOCATION_COUNTRY, START_LATITUDE, START_LONGITUDE, END_LATITUDE, END_LONGITUDE, AVERAGE_SPEED, MAX_SPEED, AVERAGE_WATTS, MAX_WATTS,
+				    WEIGHTED_AVERAGE_WATTS, AVERAGE_HEARTRATE, MAX_HEARTRATE, AVERAGE_TEMP, AVERAGE_CADENCE, CALORIES, ACHIEVEMENT_COUNT, KUDOS_COUNT, COMMENT_COUNT, ATHLETE_COUNT,
+				    PHOTO_COUNT, GEAR_ID, GEAR_NAME, TRAINER, COMMUTE, MANUAL, PRIVATE_FLAG, FLAGGED, VISIBILITY, DEVICE_NAME,
+				    EMBED_TOKEN, RESOURCE_STATE, SPLIT_COUNT,  LAP_COUNT, SEGMENT_EFFORT_COUNT, SUFFER_SCORE, DEVICEWATTS
+				)
+				VALUES
+				(
+				    ?,?,?,?,?,?,?,?,?,?,
+				    ?,?,?,?,?,?,?,?,?,?,
+				    ?,?,?,?,?,?,?,?,?,?,
+				    ?,?,?,?,?,?,?,?,?,?,
+				    ?,?,?,?,?,?,?,?,?,?,
+				    ?,?,?,?,?,?,?
+				)
+				""";
+
+		try
 		{
 			dbConnection.executeUpdateWithParams(
-			    sql,
-			    a.getId(),
-			    a.getExternalId(),
-			    a.getUploadId(),
-			    a.getAthleteId(),
-			    a.getName(),
-			    a.getDescription(),
-			    a.getDistance(),
-			    a.getMovingTime(),
-			    a.getElapsedTime(),
-			    a.getTotalElevationGain(),
-			    
-			    a.getElevHigh(),
-			    a.getElevLow(),
-			    a.getType(),
-			    a.getSportType(),
-			    a.getWorkoutType(),
-			    a.getStartDate() == null ? null : Timestamp.from(a.getStartDate()),
-			    a.getStartDateLocal() == null ? null : Timestamp.from(a.getStartDateLocal()),
-			    a.getTimezone(),
-			    a.getUtcOffset(),
-			    a.getLocationCity(),
-			    
-			    a.getLocationState(),
-			    a.getLocationCountry(),
-			    getLat(a.getStartLatlng()),
-			    getLng(a.getStartLatlng()),
-			    getLat(a.getEndLatlng()),
-			    getLng(a.getEndLatlng()),
-			    a.getAverageSpeed(),
-			    a.getMaxSpeed(),
-			    a.getAverageWatts(),
-			    a.getMaxWatts(),
-			    
-			    a.getWeightedAverageWatts(),
-			    a.getAverageHeartrate(),
-			    a.getMaxHeartrate(),
-			    a.getAverageTemp(),
-			    a.getAverageCadence(),
-			    a.getCalories(),
-			    a.getAchievementCount(),
-			    a.getKudosCount(),
-			    a.getCommentCount(),
-			    a.getAthleteCount(),
-			    
-			    a.getPhotoCount(),
-			    a.getGearId(),
-			    a.getGearName(),
-			    a.getTrainer(),
-			    a.getCommute(),
-			    a.getManual(),
-			    a.getPrivate(),
-			    a.getFlagged(),
-			    a.getVisibility(),
-			    a.getDeviceName(),
-			    
-			    a.getEmbedToken(),
-			    a.getResourceState(),
-			    a.getSplitCount(),
-			    a.getLapCount(),
-			    a.getSegmentEffortCount(),
-				a.getSufferScore()
+				sql,
+				a.getId(),
+				a.getExternalId(),
+				a.getUploadId(),
+				a.getAthleteId(),
+				a.getName(),
+				a.getDescription(),
+				a.getDistance(),
+				a.getMovingTime(),
+				a.getElapsedTime(),
+				a.getTotalElevationGain(),
+
+				a.getElevHigh(),
+				a.getElevLow(),
+				a.getType(),
+				a.getSportType(),
+				a.getWorkoutType(),
+				a.getStartDate() == null ? null : Timestamp.from(a.getStartDate()),
+				a.getStartDateLocal() == null ? null : Timestamp.from(a.getStartDateLocal()),
+				a.getTimezone(),
+				a.getUtcOffset(),
+				a.getLocationCity(),
+
+				a.getLocationState(),
+				a.getLocationCountry(),
+				getLat(a.getStartLatlng()),
+				getLng(a.getStartLatlng()),
+				getLat(a.getEndLatlng()),
+				getLng(a.getEndLatlng()),
+				a.getAverageSpeed(),
+				a.getMaxSpeed(),
+				a.getAverageWatts(),
+				a.getMaxWatts(),
+
+				a.getWeightedAverageWatts(),
+				a.getAverageHeartrate(),
+				a.getMaxHeartrate(),
+				a.getAverageTemp(),
+				a.getAverageCadence(),
+				a.getCalories(),
+				a.getAchievementCount(),
+				a.getKudosCount(),
+				a.getCommentCount(),
+				a.getAthleteCount(),
+
+				a.getPhotoCount(),
+				a.getGearId(),
+				a.getGearName(),
+				a.getTrainer(),
+				a.getCommute(),
+				a.getManual(),
+				a.getPrivate(),
+				a.getFlagged(),
+				a.getVisibility(),
+				a.getDeviceName(),
+
+				a.getEmbedToken(),
+				a.getResourceState(),
+				a.getSplitCount(),
+				a.getLapCount(),
+				a.getSegmentEffortCount(),
+				a.getSufferScore(),
+				a.getDeviceWatts()
 			);
 		}
 		catch (Exception e)
@@ -986,32 +988,32 @@ public class StravaService
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    }
+	}
 
-    private Double getLat(List<Double> latlng)
-    {
-        return latlng != null && latlng.size() > 0
-            ? latlng.get(0)
-            : null;
-    }
+	private Double getLat(List<Double> latlng)
+	{
+		return latlng != null && latlng.size() > 0
+			? latlng.get(0)
+			: null;
+	}
 
-    private Double getLng(List<Double> latlng)
-    {
-        return latlng != null && latlng.size() > 1
-            ? latlng.get(1)
-            : null;
-    }
-
-
+	private Double getLng(List<Double> latlng)
+	{
+		return latlng != null && latlng.size() > 1
+			? latlng.get(1)
+			: null;
+	}
 
 	public List<StravaTrackPoint> createTrackPoints(
-		ActivityStreams streams) {
+		ActivityStreams streams)
+	{
 
 		List<StravaTrackPoint> result = new ArrayList<>();
 
 		int count = streams.getTime().getData().size();
 
-		for (int i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++)
+		{
 
 			StravaTrackPoint p = new StravaTrackPoint();
 
@@ -1048,11 +1050,11 @@ public class StravaService
 	public boolean existsStravaActivityinDB(long id)
 	{
 		String sql = "SELECT * FROM STRAVA_ACTIVITY WHERE ID = " + id;
-		
-		 try
+
+		try
 		{
-			List<Map<String, Object>>  x = this.dbConnection.executeQuery(sql);
-			if(x != null && !x.isEmpty())
+			List<Map<String, Object>> x = this.dbConnection.executeQuery(sql);
+			if (x != null && !x.isEmpty())
 			{
 				return true;
 			}
@@ -1066,13 +1068,14 @@ public class StravaService
 		return false;
 	}
 
-
 	public boolean importStravaActivityToDB(long id)
 	{
-		if(!existsStravaActivityinDB(id))
+		if (!existsStravaActivityinDB(id))
 		{
 			StravaActivity a = getActivityById(id);
 			List<StravaTrackPoint> trackpoints = getActivityStream(id);
+
+			PowerCalculation.calulatePower(a, trackpoints, false);
 
 			saveActivityToDb(a);
 			saveTrackPointsToDb(id, trackpoints);
@@ -1089,29 +1092,28 @@ public class StravaService
 	private void saveTrackPointsToDb(long id, List<StravaTrackPoint> trackpoints)
 	{
 
-		String sqlBeginn = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE) VALUES ";
+		String sqlBeginn = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE, CADENCE, GRADE) VALUES ";
 		StringBuilder sql = new StringBuilder();
 		List<Integer> savedTimes = new ArrayList<>();
 
 		boolean first = true;
-		int i=0;
-		int anzahlGesamt=0;
+		int i = 0;
+		int anzahlGesamt = 0;
 		for (StravaTrackPoint p : trackpoints)
 		{
 
-
-			if(savedTimes.contains(p.getTime()))
+			if (savedTimes.contains(p.getTime()))
 			{
 				log.warn("Duplicate trackpoint time {} for activity {}, skipping", p.getTime(), id);
 
 			}
 			else
 			{
-				if(first)
+				if (first)
 				{
 					sql = new StringBuilder();
 					sql.append(sqlBeginn);
-					first=false;
+					first = false;
 				}
 				else
 				{
@@ -1127,21 +1129,23 @@ public class StravaService
 					.append(p.getVelocity()).append(", ")
 					.append(p.getLatitude()).append(", ")
 					.append(p.getLongitude()).append(", ")
-					.append(p.getTemperature()).append(")");
+					.append(p.getTemperature()).append(", ")
+					.append(p.getCadence()).append(", ")
+					.append(p.getGrade()).append(")");
 				i++;
 				savedTimes.add(p.getTime());
 			}
 
-			if (i>=1000)
+			if (i >= 1000)
 			{
 				anzahlGesamt += insertTrackpoints(sql);
 
-				i=0;
+				i = 0;
 				first = true;
 			}
 		}
 
-		if(i>0)
+		if (i > 0)
 		{
 			anzahlGesamt += insertTrackpoints(sql);
 		}
@@ -1149,9 +1153,9 @@ public class StravaService
 
 	}
 
-	private int insertTrackpoints(  StringBuilder sql)
+	private int insertTrackpoints(StringBuilder sql)
 	{
-		int anzahl =0;
+		int anzahl = 0;
 		try
 		{
 			anzahl = dbConnection.executeUpdate(sql.toString());

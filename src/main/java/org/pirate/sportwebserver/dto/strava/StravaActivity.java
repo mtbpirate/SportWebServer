@@ -93,6 +93,7 @@ public class StravaActivity implements Serializable
 	private Integer splitCount;
 	private Integer lapCount;
 	private Integer segmentEffortCount;
+	private Boolean deviceWatts;
 
 	public StravaActivity()
 	{
@@ -637,5 +638,15 @@ public class StravaActivity implements Serializable
 	public void setSegmentEffortCount(Integer segmentEffortCount)
 	{
 		this.segmentEffortCount = segmentEffortCount;
+	}
+
+	public void setDeviceWatts(Boolean deviceWatts)
+	{
+		this.deviceWatts = deviceWatts;
+	}
+
+	public Boolean getDeviceWatts()
+	{
+		return deviceWatts;
 	}
 }

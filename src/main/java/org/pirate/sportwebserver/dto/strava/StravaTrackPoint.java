@@ -4,21 +4,15 @@ public class StravaTrackPoint {
 
 	private Integer time;
 	private Double distance;
-
 	private Double latitude;
 	private Double longitude;
-
 	private Double altitude;
-
 	private Integer heartrate;
-
 	private Integer watts;
-
 	private Double velocity;
-
 	private Integer temperature;
-
 	private Integer cadence;
+	private Double grade;
 
 	public Integer getTime() {
 		return time;
@@ -99,4 +93,8 @@ public class StravaTrackPoint {
 	public void setCadence(Integer cadence) {
 		this.cadence = cadence;
 	}
+
+	public Double getGrade() {return grade;}
+
+	public void setGrade(Double grade) {this.grade = grade;	}
 }
