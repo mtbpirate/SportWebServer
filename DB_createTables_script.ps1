@@ -135,16 +135,40 @@ CREATE TABLE IF NOT EXISTS STRAVA_TRACKPOINT
     INDEX IDX_TRACKPOINT_ACTIVITY (ACTIVITY_ID)
 );
 
-CREATE TABLE IF NOT EXISTS STRAVA_BIKE
-(
-    GEAR_ID VARCHAR(50),
-    GEAR_NAME VARCHAR(255),
-    TYPE VARCHAR(50),
-    CRR FLOAT,
-    CDA FLOAT,
-    PRIMARY KEY (GEAR_ID),
-    INDEX IDX_STRAVA_BIKE_GEAR_NAME (GEAR_ID)
-);
+
+-- Exportiere Struktur von Tabelle swstest.STRAVA_BIKE
+CREATE TABLE IF NOT EXISTS `STRAVA_BIKE` (
+  `GEAR_ID` varchar(50) NOT NULL,
+  `GEAR_NAME` varchar(255) DEFAULT NULL,
+  `CRR` float DEFAULT NULL,
+  `CDA` float DEFAULT NULL,
+  `TYP` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `GEWICHT` float DEFAULT NULL,
+  PRIMARY KEY (`GEAR_ID`),
+  KEY `IDX_STRAVA_BIKE_GEAR_NAME` (`GEAR_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Exportiere Daten aus Tabelle swstest.STRAVA_BIKE: ~11 rows (ungefähr)
+INSERT INTO `STRAVA_BIKE` (`GEAR_ID`, `GEAR_NAME`, `CRR`, `CDA`, `TYP`, `GEWICHT`) VALUES
+	('b10395535', 'Wahoo Kickr Core', NULL, NULL, 'E', NULL),
+	('b13106325', 'BMC', 0.005, 0.3, 'R', 7.5),
+	('b14388263', 'Specialized Epic', 0.012, 0.45, 'M', 11.8),
+	('b3209245', 'Cannondale Synapse', 0.005, 0.32, 'R', 8.2),
+	('b3209247', 'Scalpel 3 26"', 0.01, 0.4, 'M', 11),
+	('b3705431', 'MTB Scalpel 3  29"', 0.009, 0.4, 'M', 11.7),
+	('b3823455', 'Daum 8i', NULL, NULL, 'E', NULL),
+	('b5199429', 'KTM eBike Mutti', 0.012, 0.45, 'M', 24),
+	('b5222017', 'Cannondale R600', 0.005, 0.32, 'R', 9),
+	('b5222174', 'XXX Rad', NULL, NULL, 'M', 14),
+	('b6801898', 'RR Cannondale Synapse Disc', 0.005, 0.32, 'R', 8.2);
+
+
+
+
+
+
+
+
 
 "@ | Set-Content temp.sql
 

@@ -779,6 +779,7 @@ public class StravaService
 
 			StravaAthlete athlete = mapToStravaAthlete(resp);
 			log.info("Fetched athlete {} from Strava", athleteId);
+			log.info("Detail {}", resp);
 			return athlete;
 		}
 		catch (Exception e)
@@ -1074,8 +1075,32 @@ public class StravaService
 		{
 			StravaActivity a = getActivityById(id);
 			List<StravaTrackPoint> trackpoints = getActivityStream(id);
+			float crr = 0;
+			float cda = 0;
+			float gewicht = 14;
+			try
+			{
+				String sql = "select CRR,CDA, GEWICHT from STRAVA_BIKE where GEAR_ID = '" + a.getGearId() + "' ";
+				List<Map<String, Object>> rows = dbConnection.executeQuery(sql);
+				if (rows != null && !rows.isEmpty())
+				{
+					Map<String, Object> row = rows.get(0);
+					if (row.get("CRR") != null)
+						crr = ((Number) row.get("CRR")).floatValue();
+					if (row.get("CDA") != null)
+						cda = ((Number) row.get("CDA")).floatValue();
+					if (row.get("GEWICHT") != null)
+						gewicht = ((Number) row.get("GEWICHT")).floatValue();
+				}
+			}
+			catch (Exception e)
+			{
+				log.error("Bike Daten konnten nicht aus DB gelesen werden");
+			}
 
-			PowerCalculation.calulatePower(a, trackpoints, false);
+			gewicht += 75.0f;
+
+			PowerCalculation.calulatePower(a, trackpoints, gewicht, crr, cda, false);
 
 			saveActivityToDb(a);
 			saveTrackPointsToDb(id, trackpoints);

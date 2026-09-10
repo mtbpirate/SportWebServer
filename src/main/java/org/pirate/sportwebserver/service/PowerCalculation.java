@@ -11,19 +11,23 @@ public class PowerCalculation
 {
 	private static final Logger log = LoggerFactory.getLogger(PowerCalculation.class);
 
-	public static void calulatePower(StravaActivity activity, List<StravaTrackPoint> trackPoints, boolean forceRecalculation)
+	/**
+	 * Berechnet die Leistung der übergebenen Trackpoints
+	 * @param activity           Strava Activity
+	 * @param trackPoints        Liste Trackpoints
+	 * @param gewicht            Gewicht Fahrrad + Bike
+	 * @param crr                Rollweiderstand
+	 * @param cda                Luftweiderstand
+	 * @param forceRecalculation true=immer berechnen
+	 */
+	public static void calulatePower(StravaActivity activity, List<StravaTrackPoint> trackPoints, float gewicht, float crr, float cda, boolean forceRecalculation)
 	{
-		//todo: Daten für Bike und Fahrer aus DB holen
-		float bikeWeight = 8.0f; // in kg
-		float riderWeight = 70.0f; // in kg
-		float crr = 0.005f; // Rollwiderstandskoeffizient
-		float cad = 0.31f; // Luftwiderstandsbeiwert
 
 		if (forceRecalculation || !activity.getDeviceWatts())
 		{
 			for (StravaTrackPoint point : trackPoints)
 			{
-				point.setWatts(calculatePower(point, (bikeWeight + riderWeight), cad, crr));
+				point.setWatts(calculatePower(point, gewicht, cda, crr));
 			}
 
 		}

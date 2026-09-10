@@ -55,9 +55,12 @@ public class SchedulerService
 		refreshStravaTokenIfNeeded();
 
 		//importStravaActivities();
-		long id = 20089402315L;
+		long idRR = 20089402315L;
+		long idErgo = 18230808221L;
+		long idMTB = 19762286801L;
 
-		stravaService.importStravaActivityToDB(id);
+		stravaService.importStravaActivityToDB(idMTB);
+		//stravaService.importStravaActivityToDB(idErgo);
 
 	}
 
