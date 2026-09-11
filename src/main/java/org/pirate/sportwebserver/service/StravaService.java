@@ -280,7 +280,7 @@ public class StravaService
 			List<Integer> time = getData(resp, "time");
 			List<Double> altitude = getData(resp, "altitude");
 			List<Integer> heartrate = getData(resp, "heartrate");
-			List<Integer> watts = getData(resp, "watts");
+			List<Double> watts = getData(resp, "watts");
 			List<Double> velocity = getData(resp, "velocity_smooth");
 			List<Integer> temp = getData(resp, "temp");
 			List<Integer> cadence = getData(resp, "cadence");
@@ -301,7 +301,7 @@ public class StravaService
 				if (time != null && i < time.size())
 					point.setTime(time.get(i));
 
-				if(latlng != null && i <latlng.size())
+				if (latlng != null && i < latlng.size())
 				{
 					point.setLatitude(
 						latlng.get(i).get(0));
@@ -402,7 +402,7 @@ public class StravaService
 				return Collections.emptyList();
 
 			List<StravaActivity> activities = new ArrayList<>();
-			for ( Object o : resp)
+			for (Object o : resp)
 			{
 				if (!(o instanceof Map))
 					continue;
@@ -499,7 +499,7 @@ public class StravaService
 	private StravaActivity mapToStravaActivity(Map<String, Object> m)
 	{
 		StravaActivity a = new StravaActivity();
-
+		a.setRiderweight(75.0);  //Defaultwert --> TODO von Garmin importieren
 		// Basic identification
 		Object id = m.get("id");
 		if (id instanceof Number)
@@ -906,7 +906,7 @@ public class StravaService
 				    LOCATION_STATE, LOCATION_COUNTRY, START_LATITUDE, START_LONGITUDE, END_LATITUDE, END_LONGITUDE, AVERAGE_SPEED, MAX_SPEED, AVERAGE_WATTS, MAX_WATTS,
 				    WEIGHTED_AVERAGE_WATTS, AVERAGE_HEARTRATE, MAX_HEARTRATE, AVERAGE_TEMP, AVERAGE_CADENCE, CALORIES, ACHIEVEMENT_COUNT, KUDOS_COUNT, COMMENT_COUNT, ATHLETE_COUNT,
 				    PHOTO_COUNT, GEAR_ID, GEAR_NAME, TRAINER, COMMUTE, MANUAL, PRIVATE_FLAG, FLAGGED, VISIBILITY, DEVICE_NAME,
-				    EMBED_TOKEN, RESOURCE_STATE, SPLIT_COUNT,  LAP_COUNT, SEGMENT_EFFORT_COUNT, SUFFER_SCORE, DEVICEWATTS
+				    EMBED_TOKEN, RESOURCE_STATE, SPLIT_COUNT,  LAP_COUNT, SEGMENT_EFFORT_COUNT, SUFFER_SCORE, DEVICEWATTS, RIDER_WEIGHT
 				)
 				VALUES
 				(
@@ -915,7 +915,7 @@ public class StravaService
 				    ?,?,?,?,?,?,?,?,?,?,
 				    ?,?,?,?,?,?,?,?,?,?,
 				    ?,?,?,?,?,?,?,?,?,?,
-				    ?,?,?,?,?,?,?
+				    ?,?,?,?,?,?,?,?
 				)
 				""";
 
@@ -984,7 +984,8 @@ public class StravaService
 				a.getLapCount(),
 				a.getSegmentEffortCount(),
 				a.getSufferScore(),
-				a.getDeviceWatts()
+				a.getDeviceWatts(),
+				a.getRiderweight()
 			);
 		}
 		catch (Exception e)
@@ -1100,7 +1101,7 @@ public class StravaService
 				log.error("Bike Daten konnten nicht aus DB gelesen werden");
 			}
 
-			gewicht += 75.0f;
+			gewicht += a.getRiderweight();
 
 			PowerCalculation.calulatePower(a, trackpoints, gewicht, crr, cda, false);
 
@@ -1152,7 +1153,7 @@ public class StravaService
 					.append(p.getDistance()).append(", ")
 					.append(p.getAltitude()).append(", ")
 					.append(p.getHeartrate()).append(", ")
-					.append(p.getWatts()).append(", ")
+					.append(Math.round(p.getWatts())).append(", ")
 					.append(p.getVelocity()).append(", ")
 					.append(p.getLatitude()).append(", ")
 					.append(p.getLongitude()).append(", ")

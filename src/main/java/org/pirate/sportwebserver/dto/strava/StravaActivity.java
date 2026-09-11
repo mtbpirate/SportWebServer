@@ -29,6 +29,7 @@ public class StravaActivity implements Serializable
 	private Double totalElevationGain; // meters
 	private Double elevHigh; // meters
 	private Double elevLow; // meters
+	private Double riderweight; // kg
 
 	// Type and classification
 	private String type; // Ride, Run, Swim, etc.
@@ -648,5 +649,15 @@ public class StravaActivity implements Serializable
 	public Boolean getDeviceWatts()
 	{
 		return deviceWatts;
+	}
+
+	public Double getRiderweight()
+	{
+		return riderweight;
+	}
+
+	public void setRiderweight(Double riderweight)
+	{
+		this.riderweight = riderweight;
 	}
 }

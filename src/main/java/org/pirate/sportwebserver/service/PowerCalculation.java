@@ -30,6 +30,8 @@ public class PowerCalculation
 				point.setWatts(calculatePower(point, gewicht, cda, crr));
 			}
 
+			calibratePower(activity.getAverageWatts(), trackPoints);
+
 		}
 		else
 		{
@@ -39,7 +41,77 @@ public class PowerCalculation
 
 	}
 
-	private static Integer calculatePower(StravaTrackPoint point, float gewicht, float cda, float crr)
+	private static void calibratePower(Double averageWatts, List<StravaTrackPoint> trackPoints)
+	{
+		if (averageWatts == null || trackPoints == null || trackPoints.isEmpty())
+		{
+			return;
+		}
+
+		// compute current mean of existing watt values (ignore nulls)
+		double sum = 0.0;
+		int count = 0;
+		for (StravaTrackPoint p : trackPoints)
+		{
+			Double w = p.getWatts();
+			if (w != null)
+			{
+				sum += w;
+				count++;
+			}
+		}
+
+		if (count == 0)
+		{
+			return;
+		}
+
+		double currentMean = sum / count;
+
+		// If current mean is zero, set all non-null watts to the target average (rounded)
+		if (currentMean == 0.0)
+		{
+			for (StravaTrackPoint p : trackPoints)
+			{
+				if (p.getWatts() != null)
+				{
+					p.setWatts(averageWatts);
+				}
+			}
+			log.info("calibratePower - current mean was 0, set {} points to {}", count, averageWatts);
+			return;
+		}
+
+		double factor = averageWatts / currentMean;
+		if (Double.isNaN(factor) || Double.isInfinite(factor))
+		{
+			return;
+		}
+
+		// scale each watt value by the factor and ensure non-negative integers
+		for (StravaTrackPoint p : trackPoints)
+		{
+			Double w = p.getWatts();
+			if (w != null)
+			{
+				Double newW = Math.max(0, w * factor);
+				p.setWatts(newW);
+			}
+		}
+
+		// optional verification log: compute new mean
+		double newSum = 0.0;
+		for (StravaTrackPoint p : trackPoints)
+		{
+			Double w = p.getWatts();
+			if (w != null)
+				newSum += w;
+		}
+		double newMean = newSum / count;
+		log.info("calibratePower - scaled watts: oldMean={} target={} factor={} newMean={}", currentMean, averageWatts, factor, newMean);
+	}
+
+	private static Double calculatePower(StravaTrackPoint point, float gewicht, float cda, float crr)
 	{
 		try
 		{
@@ -61,7 +133,7 @@ public class PowerCalculation
 				power = 0;
 			}
 
-			return (int) power;
+			return power;
 		}
 		catch (Exception e)
 		{
