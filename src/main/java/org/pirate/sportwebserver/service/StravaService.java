@@ -17,10 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class StravaService
@@ -289,26 +286,29 @@ public class StravaService
 			List<Integer> cadence = getData(resp, "cadence");
 			List<Double> grade = getData(resp, "grade_smooth");
 
-			int count = latlng.size();
+			int count = time.size();
 
 			List<StravaTrackPoint> result =
 				new ArrayList<>(count);
 
-			List<Integer> timelist = new ArrayList<>();
+			HashSet<Integer> timelist = new HashSet<>();
 
 			for (int i = 0; i < count; i++)
 			{
 				StravaTrackPoint point =
 					new StravaTrackPoint();
 
-				point.setLatitude(
-					latlng.get(i).get(0));
-
-				point.setLongitude(
-					latlng.get(i).get(1));
-
 				if (time != null && i < time.size())
 					point.setTime(time.get(i));
+
+				if(latlng != null && i <latlng.size())
+				{
+					point.setLatitude(
+						latlng.get(i).get(0));
+
+					point.setLongitude(
+						latlng.get(i).get(1));
+				}
 
 				if (distance != null && i < distance.size())
 					point.setDistance(distance.get(i));
@@ -388,7 +388,8 @@ public class StravaService
 		}
 		try
 		{
-			String url = String.format("https://www.strava.com/api/v3/athlete/activities?after=%d&befor=%d", timeFrom, timeTo);
+			//todo check schreibweise before im Aufruf
+			String url = String.format("https://www.strava.com/api/v3/athlete/activities?after=%d&before=%d", timeFrom, timeTo);
 			HttpHeaders headers = new HttpHeaders();
 			headers.setBearerAuth(currentToken.getAccessToken());
 			headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -401,7 +402,7 @@ public class StravaService
 				return Collections.emptyList();
 
 			List<StravaActivity> activities = new ArrayList<>();
-			for (Object o : resp)
+			for ( Object o : resp)
 			{
 				if (!(o instanceof Map))
 					continue;
@@ -511,6 +512,7 @@ public class StravaService
 			}
 			catch (Exception ex)
 			{
+				log.error("Error parsing activity ID", ex);
 			}
 		}
 
@@ -805,6 +807,7 @@ public class StravaService
 			}
 			catch (Exception ex)
 			{
+				log.error("Error parsing athlete ID", ex);
 			}
 		}
 
@@ -993,7 +996,7 @@ public class StravaService
 
 	private Double getLat(List<Double> latlng)
 	{
-		return latlng != null && latlng.size() > 0
+		return latlng != null && !latlng.isEmpty()
 			? latlng.get(0)
 			: null;
 	}
@@ -1062,9 +1065,8 @@ public class StravaService
 		}
 		catch (Exception e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
+			log.error("Error checking if Strava activity exists in DB", e);
+			return true;
 		}
 		return false;
 	}
