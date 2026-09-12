@@ -58,10 +58,11 @@ public class SchedulerService
 		long idRR = 20089402315L;
 		long idErgo = 18230808221L;
 		long idMTB = 19762286801L;
+		long idAttersee = 18266975743L;
 
-		stravaService.importStravaActivityToDB(idMTB);
+		//stravaService.importStravaActivityToDB(idRR);
 		//stravaService.importStravaActivityToDB(idErgo);
-
+		xx();
 	}
 
 	@Scheduled(cron = "0 * * * * *")
@@ -69,7 +70,10 @@ public class SchedulerService
 	{
 		log.info("TestService - Running every minute");
 		//importStravaActivities();
-		//xx();
+		xx();
+		xx();
+		xx();
+		xx();
 
 	}
 

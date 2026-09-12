@@ -12,6 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Timestamp;
@@ -332,7 +335,7 @@ public class StravaService
 					point.setGrade(grade.get(i));
 
 				if (watts != null && i < watts.size())
-					point.setWatts(watts.get(i));
+					point.setWatts(((Number) watts.get(i)).doubleValue());
 
 				//doppelte Einträge: Strava sometimes returns duplicate time values, which can cause issues. We will log a warning and skip duplicates.
 				if (timelist.contains(point.getTime()))
@@ -483,16 +486,36 @@ public class StravaService
 				org.springframework.http.HttpMethod.GET, entity, Map.class);
 			Map<String, Object> resp = response.getBody();
 			if (resp == null)
-				throw new RuntimeException("Empty response from Strava activity endpoint");
+				return null;
 
 			StravaActivity activity = mapToStravaActivity(resp);
 			log.info("Fetched activity {} from Strava", activityId);
 			return activity;
 		}
-		catch (Exception e)
+		catch (HttpClientErrorException.NotFound e)
 		{
-			log.error("Failed to fetch activity with ID {}", activityId, e);
-			throw new RuntimeException("Failed to fetch activity with ID " + activityId, e);
+			log.warn("Strava activity {} not found (404)", activityId);
+			return null;
+		}
+		catch (HttpClientErrorException.Unauthorized e)
+		{
+			log.warn("Strava token invalid or expired for activity {}", activityId, e);
+			return null;
+		}
+		catch (HttpClientErrorException.Forbidden e)
+		{
+			log.warn("Access forbidden for Strava activity {}", activityId, e);
+			return null;
+		}
+		catch (HttpServerErrorException e)
+		{
+			log.error("Strava server error while fetching activity {}", activityId, e);
+			throw e;
+		}
+		catch (RestClientException e)
+		{
+			log.error("Network or HTTP problem while fetching activity {}", activityId, e);
+			throw e;
 		}
 	}
 
@@ -1077,6 +1100,11 @@ public class StravaService
 		if (!existsStravaActivityinDB(id))
 		{
 			StravaActivity a = getActivityById(id);
+			if (a == null)
+			{
+				log.error("Keine Activity mit id={} gefunden", id);
+				return false;
+			}
 			List<StravaTrackPoint> trackpoints = getActivityStream(id);
 			float crr = 0;
 			float cda = 0;
