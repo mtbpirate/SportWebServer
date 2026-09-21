@@ -32,7 +32,6 @@ public class BikeService
 
 			for (Map<String, Object> row : results)
 			{
-
 				bikes.add(readBike(row));
 			}
 
@@ -49,13 +48,25 @@ public class BikeService
 	private Bike readBike(Map<String, Object> row)
 	{
 		Bike bike = new Bike();
-		bike.gear_id = (String) row.get("GEAR_ID");
-		bike.gear_name = (String) row.get("GEAR_NAME");
-		bike.cda = (float) (Number) row.get("CDA");
-		bike.crr = (float) (Number) row.get("CRR");
-		bike.type = (String) row.get("TYP");
-		bike.gewicht = (float) (Number) row.get("GEWICHT");
+		bike.gear_id = getString(row, "GEAR_ID");
+		bike.gear_name = getString(row, "GEAR_NAME");
+		bike.cda = getFloat(row, "CDA");
+		bike.crr = getFloat(row, "CRR");
+		bike.type = getString(row, "TYP");
+		bike.gewicht = getFloat(row, "GEWICHT");
 		return bike;
+	}
+
+	private String getString(Map<String, Object> row, String column)
+	{
+		Object val = row.get(column);
+		return val != null ? val.toString() : null;
+	}
+
+	private float getFloat(Map<String, Object> row, String column)
+	{
+		Object val = row.get(column);
+		return (val instanceof Number n) ? n.floatValue() : 0.0f;
 	}
 
 	/**
@@ -67,8 +78,9 @@ public class BikeService
 
 		try
 		{
-			List<Map<String, Object>> results = connectionService.executeQuery(
-				"SELECT * FROM STRAVA_BIKE WHERE GEAR_ID = '" + id + "' ");
+
+			List<Map<String, Object>> results = connectionService.executeQueryWithParams(
+				"SELECT * FROM STRAVA_BIKE WHERE GEAR_ID = ?", id);
 
 			if (results.isEmpty())
 			{
