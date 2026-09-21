@@ -62,7 +62,7 @@ public class SchedulerService
 
 		//stravaService.importStravaActivityToDB(idRR);
 		//stravaService.importStravaActivityToDB(idErgo);
-		xx();
+		//xx();
 	}
 
 	@Scheduled(cron = "0 * * * * *")
@@ -70,10 +70,6 @@ public class SchedulerService
 	{
 		log.info("TestService - Running every minute");
 		//importStravaActivities();
-		xx();
-		xx();
-		xx();
-		xx();
 
 	}
 
@@ -84,6 +80,12 @@ public class SchedulerService
 		testDBConnection();
 		refreshStravaTokenIfNeeded();
 
+	}
+
+	@Scheduled(cron = "0 0 * * * *")
+	public void everyHour()
+	{
+		log.info("SchedulerService - Running every hour");
 	}
 
 	private void refreshStravaTokenIfNeeded()

@@ -358,10 +358,30 @@ public class StravaService
 			return result;
 
 		}
-		catch (Exception e)
+		catch (HttpClientErrorException.NotFound e)
 		{
-			log.error("Failed to fetch activity streams for activity ID {}", activityId, e);
-			throw new RuntimeException("Failed to fetch activity streams for activity ID " + activityId, e);
+			log.warn("Strava Trackpoints for Activity {} not found (404)", activityId);
+			return null;
+		}
+		catch (HttpClientErrorException.Unauthorized e)
+		{
+			log.warn("Strava token invalid or expired for activity {}", activityId, e);
+			return null;
+		}
+		catch (HttpClientErrorException.Forbidden e)
+		{
+			log.warn("Access forbidden for Strava Trackpoints {}", activityId, e);
+			return null;
+		}
+		catch (HttpServerErrorException e)
+		{
+			log.error("Strava server error while fetching Trackpoints for activity {}", activityId, e);
+			throw e;
+		}
+		catch (RestClientException e)
+		{
+			log.error("Network or HTTP problem while fetching Trackpoints for activity {}", activityId, e);
+			throw e;
 		}
 	}
 
@@ -1130,8 +1150,8 @@ public class StravaService
 			}
 
 			gewicht += a.getRiderweight();
-
-			PowerCalculation.calulatePower(a, trackpoints, gewicht, crr, cda, false);
+			if (trackpoints != null && !trackpoints.isEmpty())
+				PowerCalculation.calulatePower(a, trackpoints, gewicht, crr, cda, false);
 
 			saveActivityToDb(a);
 			saveTrackPointsToDb(id, trackpoints);
@@ -1147,6 +1167,11 @@ public class StravaService
 
 	private void saveTrackPointsToDb(long id, List<StravaTrackPoint> trackpoints)
 	{
+		if (trackpoints == null || trackpoints.isEmpty())
+		{
+			log.info("Keine Trackpoints zum Speichern vorhanden");
+			return;
+		}
 
 		String sqlBeginn = "INSERT INTO STRAVA_TRACKPOINT (ACTIVITY_ID, TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE, TEMPERATURE, CADENCE, GRADE) VALUES ";
 		StringBuilder sql = new StringBuilder();
