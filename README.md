@@ -6,6 +6,7 @@ Kleiner Spring-Boot-Webserver mit:
 - OpenAPI/Swagger UI
 - Datei-Logging ueber `application.properties`
 
+
 ## Voraussetzungen
 
 - Java 17+ (empfohlen fuer Spring Boot 3.x)
