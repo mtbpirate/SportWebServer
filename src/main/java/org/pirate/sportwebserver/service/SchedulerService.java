@@ -1,7 +1,6 @@
 package org.pirate.sportwebserver.service;
 
 import jakarta.annotation.PostConstruct;
-import org.pirate.sportwebserver.dto.strava.StravaActivity;
 import org.pirate.sportwebserver.dto.strava.StravaToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,18 +27,18 @@ public class SchedulerService
 	@Autowired(required = false)
 	private StravaService stravaService;
 
-	@Value("${testvar:default-testvar}")
-	private int testvar;
+	@Value("${startupkey:default-9999}")
+	private int startUpKey;
 
 	private long lastStravaImportTime = 0;
 
 	@PostConstruct
 	private void init()
 	{
-		log.info("SchedulerService - init, testvar={}", testvar);
-		if (testvar != 3283)
+
+		if (startUpKey != 3283)
 		{
-			log.warn("SchedulerService - Falsch konfiguriert, testvar={}", testvar);
+			log.warn("SchedulerService - Falsch konfiguriert, startUpKey={}", startUpKey);
 			log.warn("---- Programm wird beendet ----");
 			System.exit(1);
 
@@ -54,40 +53,36 @@ public class SchedulerService
 
 		refreshStravaTokenIfNeeded();
 
-		//importStravaActivities();
+		/* verschienene Strava-IDs, die zum Testen verwendet werden können
 		long idRR = 20089402315L;
 		long idErgo = 18230808221L;
 		long idMTB = 19762286801L;
 		long idAttersee = 18266975743L;
+		*/
 
-		//stravaService.importStravaActivityToDB(idRR);
-		//stravaService.importStravaActivityToDB(idErgo);
-		//xx();
 	}
 
 	@Scheduled(cron = "0 * * * * *")
 	public void everyMinute()
 	{
-		log.info("TestService - Running every minute");
-		//importStravaActivities();
+		log.info("SchedulerService - Running every minute, aktuelle Uhrzeit: {}", ZonedDateTime.now());
 
 	}
 
+	/**
+	 * Runs every 5 minutes to test the DB connection and refresh the Strava token if needed.
+	 */
 	@Scheduled(cron = "0 */5 * * * *")
 	public void every5Minute()
 	{
-		log.info("TestService - Running every 5 minutes");
+		log.info("SchedulerService - Running every 5 minutes, aktuelle Uhrzeit: {}", ZonedDateTime.now());
 		testDBConnection();
 		refreshStravaTokenIfNeeded();
-
 	}
 
-	@Scheduled(cron = "0 0 * * * *")
-	public void everyHour()
-	{
-		log.info("SchedulerService - Running every hour");
-	}
-
+	/**
+	 * aktualisiert den Strava-Token, wenn er in weniger als 10 Minuten abläuft.
+	 */
 	private void refreshStravaTokenIfNeeded()
 	{
 		log.info("SchedulerService - Checking Strava token expiration");
@@ -127,14 +122,22 @@ public class SchedulerService
 		}
 	}
 
+	/**
+	 * Testet die DB-Verbindung.
+	 */
 	private void testDBConnection()
 	{
-		log.info("Test DB connection every Minute");
+		log.info("Test DB connection");
 		dbConnection.testConnection();
-		log.info("TestService - DB connection test completed");
+		log.info("DB connection test completed");
 	}
 
-	private void xx()
+	/**
+	 * Importiert noch fehlende Strava-Aktivitäten in die Datenbank.
+	 * immer nur eine Aktivität pro Aufruf, um die Last zu reduzieren.
+	 */
+	@Deprecated
+	private void importStravaActivities()
 	{
 		try
 		{
@@ -151,7 +154,6 @@ public class SchedulerService
 				stravaService.importStravaActivityToDB(stravaId);
 				break;
 			}
-
 		}
 		catch (Exception e)
 		{
@@ -159,29 +161,5 @@ public class SchedulerService
 		}
 	}
 
-	private void importStravaActivities()
-	{
-		if (lastStravaImportTime == 0)
-			lastStravaImportTime = System.currentTimeMillis() / 1000L;
-
-		long timefrom = lastStravaImportTime - 3600 * 24 * 30; // 1 month back
-		List<StravaActivity> activities = stravaService.getActivities(timefrom, lastStravaImportTime);
-		int anzahl = 0;
-		for (StravaActivity activity : activities)
-		{
-			log.info("Importing Strava activity: {}", activity);
-			if (stravaService.importStravaActivityToDB(activity.getId()))
-			{
-
-				log.info("Strava activity imported successfully: {}", activity.getId());
-				anzahl++;
-				if (anzahl >= 10)
-					break;
-
-			}
-			lastStravaImportTime = Math.min(lastStravaImportTime, activity.getStartDate().getEpochSecond());
-		}
-
-	}
 
 }
