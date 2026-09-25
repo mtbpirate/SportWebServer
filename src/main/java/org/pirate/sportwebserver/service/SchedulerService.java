@@ -1,6 +1,7 @@
 package org.pirate.sportwebserver.service;
 
 import jakarta.annotation.PostConstruct;
+import org.pirate.sportwebserver.dto.strava.StravaActivity;
 import org.pirate.sportwebserver.dto.strava.StravaToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -29,9 +31,7 @@ public class SchedulerService
 
 	@Value("${startupkey:default-9999}")
 	private int startUpKey;
-
-	private long lastStravaImportTime = 0;
-
+	
 	@PostConstruct
 	private void init()
 	{
@@ -67,6 +67,13 @@ public class SchedulerService
 	{
 		log.info("SchedulerService - Running every minute, aktuelle Uhrzeit: {}", ZonedDateTime.now());
 
+	}
+
+	@Scheduled(cron = "0 0 * * * *")
+	public void everyHour()
+	{
+		log.info("SchedulerService - Running every hour, aktuelle Uhrzeit: {}", ZonedDateTime.now());
+		importNewStravaActivities();
 	}
 
 	/**
@@ -132,9 +139,53 @@ public class SchedulerService
 		log.info("DB connection test completed");
 	}
 
+	private void importNewStravaActivities()
+	{
+		log.info("---- Import New Strava Activities -----");
+		long before = Instant.now().minus(1, ChronoUnit.HOURS).getEpochSecond();
+		long after = Instant.now().minus(14, ChronoUnit.DAYS).getEpochSecond();
+
+		List<StravaActivity> activities = stravaService.getActivities(after, before);
+		if (!activities.isEmpty())
+		{
+			log.info("{} Activities gefunden", activities.size());
+			for (StravaActivity activity : activities)
+			{
+				if (!activityExists(activity.getId()))
+				{
+					stravaService.importStravaActivityToDB(activity.getId());
+				}
+			}
+		}
+		else
+		{
+			log.info("keine Activities gefunden");
+		}
+		log.info("---- END  Import New Strava Activities -----");
+	}
+
+	private boolean activityExists(Long id)
+	{
+		if (id == null)
+		{
+			return false;
+		}
+
+		try
+		{
+			List<Map<String, Object>> results = dbConnection.executeQueryWithParams(
+				"SELECT ID FROM STRAVA_ACTIVITY WHERE ID = ?", id);
+			return !results.isEmpty();
+		}
+		catch (Exception e)
+		{
+			log.error("SchedulerService - Error checking activity {} in database", id, e);
+			throw new RuntimeException("Failed to check activity in database: " + id, e);
+		}
+	}
+
 	/**
-	 * Importiert noch fehlende Strava-Aktivitäten in die Datenbank.
-	 * immer nur eine Aktivität pro Aufruf, um die Last zu reduzieren.
+	 * Importiert noch fehlende Strava-Aktivitäten in die Datenbank. immer nur eine Aktivität pro Aufruf, um die Last zu reduzieren.
 	 */
 	@Deprecated
 	private void importStravaActivities()
@@ -160,6 +211,5 @@ public class SchedulerService
 			log.error("SchedulerService - Error executing query", e);
 		}
 	}
-
 
 }

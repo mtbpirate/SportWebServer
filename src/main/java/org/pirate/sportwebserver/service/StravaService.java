@@ -542,7 +542,7 @@ public class StravaService
 	private StravaActivity mapToStravaActivity(Map<String, Object> m)
 	{
 		StravaActivity a = new StravaActivity();
-		a.setRiderweight(75.0);  //Defaultwert --> TODO von Garmin importieren
+
 		// Basic identification
 		Object id = m.get("id");
 		if (id instanceof Number)
@@ -558,6 +558,12 @@ public class StravaService
 				log.error("Error parsing activity ID", ex);
 			}
 		}
+
+		Object riderweight = m.get("rider_weight");
+		if (riderweight instanceof Number)
+			a.setRiderweight(((Number) riderweight).doubleValue());
+		else
+			a.setRiderweight(75.0); //Defaultwert --> TODO von Garmin importieren
 
 		if (m.get("external_id") != null)
 			a.setExternalId((String) m.get("external_id"));
@@ -982,8 +988,9 @@ public class StravaService
 				a.getType(),
 				a.getSportType(),
 				a.getWorkoutType(),
-				a.getStartDate() == null ? null : Timestamp.from(a.getStartDate()),
-				a.getStartDateLocal() == null ? null : Timestamp.from(a.getStartDateLocal()),
+				//damit die Zeiten auch wirklich Stimmen wegen Umrechnung UTC
+				a.getStartDate() == null ? null : Timestamp.from(a.getStartDate().minusSeconds(a.getUtcOffset())),
+				a.getStartDateLocal() == null ? null : Timestamp.from(a.getStartDateLocal().minusSeconds(a.getUtcOffset())),
 				a.getTimezone(),
 				a.getUtcOffset(),
 				a.getLocationCity(),

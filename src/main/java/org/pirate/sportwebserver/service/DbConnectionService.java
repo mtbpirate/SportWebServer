@@ -1,5 +1,11 @@
 package org.pirate.sportwebserver.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -8,13 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.sql.DataSource;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 @Service
 public class DbConnectionService
@@ -26,7 +25,6 @@ public class DbConnectionService
 
 	/**
 	 * Führt ein SQL SELECT Statement aus und gibt die Ergebnisse zurück
-	 * 
 	 * @param sql SQL Query (z.B. "SELECT * FROM bike WHERE gewicht > 2.5")
 	 * @return List von Maps mit Spaltennamen als Keys und Spaltenwerte als Values
 	 * @throws Exception Falls SQL-Fehler auftritt
@@ -48,7 +46,7 @@ public class DbConnectionService
 				Map<String, Object> row = new HashMap<>();
 				for (int i = 1; i <= columnCount; i++)
 				{
-					String columnName = metaData.getColumnName(i);
+					String columnName = metaData.getColumnName(i).toUpperCase();
 					Object value = resultSet.getObject(i);
 					row.put(columnName, value);
 				}
@@ -68,7 +66,6 @@ public class DbConnectionService
 
 	/**
 	 * Führt ein SQL INSERT/UPDATE/DELETE Statement aus
-	 * 
 	 * @param sql SQL Statement (z.B. "UPDATE bike SET gewicht = 2.5 WHERE idbike = 1")
 	 * @return Anzahl der betroffenen Zeilen
 	 * @throws Exception Falls SQL-Fehler auftritt
@@ -93,7 +90,6 @@ public class DbConnectionService
 
 	/**
 	 * Testet die Datenbankverbindung
-	 * 
 	 * @return true wenn Verbindung erfolgreich, false sonst
 	 */
 	public boolean testConnection()
@@ -121,8 +117,7 @@ public class DbConnectionService
 
 	/**
 	 * Führt ein SQL Statement mit Parametern aus (verhindert SQL-Injection)
-	 * 
-	 * @param sql SQL Query mit ? als Platzhalter (z.B. "SELECT * FROM bike WHERE idbike = ?")
+	 * @param sql        SQL Query mit ? als Platzhalter (z.B. "SELECT * FROM bike WHERE idbike = ?")
 	 * @param parameters Parameter für die Platzhalter
 	 * @return List von Maps mit Ergebnissen
 	 * @throws Exception Falls SQL-Fehler auftritt
@@ -151,7 +146,7 @@ public class DbConnectionService
 					Map<String, Object> row = new HashMap<>();
 					for (int i = 1; i <= columnCount; i++)
 					{
-						String columnName = metaData.getColumnName(i);
+						String columnName = metaData.getColumnName(i).toUpperCase();
 						Object value = resultSet.getObject(i);
 						row.put(columnName, value);
 					}
@@ -172,8 +167,7 @@ public class DbConnectionService
 
 	/**
 	 * Führt ein SQL INSERT/UPDATE/DELETE Statement mit Parametern aus (verhindert SQL-Injection)
-	 * 
-	 * @param sql SQL Statement mit ? als Platzhalter (z.B. "INSERT INTO bike (text, gewicht) VALUES (?, ?)")
+	 * @param sql        SQL Statement mit ? als Platzhalter (z.B. "INSERT INTO bike (text, gewicht) VALUES (?, ?)")
 	 * @param parameters Parameter für die Platzhalter
 	 * @return Anzahl der betroffenen Zeilen
 	 * @throws Exception Falls SQL-Fehler auftritt
