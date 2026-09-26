@@ -2,6 +2,8 @@ package org.pirate.sportwebserver.controller;
 
 import org.pirate.sportwebserver.dto.strava.StravaActivity;
 import org.pirate.sportwebserver.service.ActivityService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import java.util.List;
 @RequestMapping("/api")
 public class ActivityController
 {
+	private static final Logger log = LoggerFactory.getLogger(ActivityController.class);
 	@Autowired
 	private ActivityService activityService;
 
@@ -27,6 +30,8 @@ public class ActivityController
 		@RequestParam(required = false) String sportart,
 		@RequestParam(required = false) String textfilter)
 	{
+		log.info("GET: /api/activitys ({},{},{},{}", vonDatum, bisDatum, sportart, textfilter);
+
 		List<StravaActivity> activities = activityService.getActivities(vonDatum, bisDatum, sportart, textfilter);
 		if (activities.isEmpty())
 		{
@@ -42,6 +47,7 @@ public class ActivityController
 	@GetMapping("/activity/{tourId}")
 	public ResponseEntity<StravaActivity> getTourById(@PathVariable long tourId)
 	{
+		log.info("GET: /api/activity/{}", tourId);
 		StravaActivity activity = activityService.getActivityById(tourId);
 		if (activity == null)
 		{
