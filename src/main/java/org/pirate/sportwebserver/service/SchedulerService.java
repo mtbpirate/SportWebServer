@@ -31,7 +31,7 @@ public class SchedulerService
 
 	@Value("${startupkey:default-9999}")
 	private int startUpKey;
-	
+
 	@PostConstruct
 	private void init()
 	{
@@ -62,12 +62,12 @@ public class SchedulerService
 
 	}
 
-	@Scheduled(cron = "0 * * * * *")
-	public void everyMinute()
-	{
-		log.info("SchedulerService - Running every minute, aktuelle Uhrzeit: {}", ZonedDateTime.now());
-
-	}
+	//	@Scheduled(cron = "0 * * * * *")
+	//	public void everyMinute()
+	//	{
+	//		log.info("SchedulerService - Running every minute, aktuelle Uhrzeit: {}", ZonedDateTime.now());
+	//
+	//	}
 
 	@Scheduled(cron = "0 0 * * * *")
 	public void everyHour()
@@ -143,7 +143,7 @@ public class SchedulerService
 	{
 		log.info("---- Import New Strava Activities -----");
 		long before = Instant.now().minus(1, ChronoUnit.HOURS).getEpochSecond();
-		long after = Instant.now().minus(14, ChronoUnit.DAYS).getEpochSecond();
+		long after = Instant.now().minus(7, ChronoUnit.DAYS).getEpochSecond();
 
 		List<StravaActivity> activities = stravaService.getActivities(after, before);
 		if (!activities.isEmpty())
