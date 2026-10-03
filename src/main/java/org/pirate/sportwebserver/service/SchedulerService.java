@@ -15,6 +15,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -151,7 +152,7 @@ public class SchedulerService
 			log.info("{} Activities gefunden", activities.size());
 			for (StravaActivity activity : activities)
 			{
-				if (!activityExists(activity.getId()))
+				if (stavaNameIsOK(activity.getName()) && !activityExists(activity.getId()))
 				{
 					stravaService.importStravaActivityToDB(activity.getId());
 				}
@@ -162,6 +163,31 @@ public class SchedulerService
 			log.info("keine Activities gefunden");
 		}
 		log.info("---- END  Import New Strava Activities -----");
+	}
+
+	/**
+	 * Der strava Name darf nicht der von Strava vergebene Standardname für eine Activity sein z.B. "Morning Ride"
+	 * @param name
+	 * @return
+	 */
+	private boolean stavaNameIsOK(String name)
+	{
+		if (name == null || name.isBlank())
+		{
+			log.info("stavaNameIsOK: Name is null or blank");
+			return false;
+		}
+
+		String lower = name.trim().toLowerCase(Locale.ROOT);
+		if (lower.matches("^(ride|run|swim|walk|hike|workout|bike ride|mtb ride|mountain bike ride)$")
+			|| lower.matches(
+			"^(morning|afternoon|evening|lunch|night|sunrise|sunset|midday|early morning|late evening|after work|before work|after-work|before-work)[\\s-]+(ride|run|swim|walk|hike|workout)$"))
+		{
+			log.info("stavaNameIsOK: Name '{}' is a default Strava name", name);
+			return false;
+		}
+
+		return true;
 	}
 
 	private boolean activityExists(Long id)
