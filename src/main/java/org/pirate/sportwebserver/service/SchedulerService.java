@@ -74,6 +74,13 @@ public class SchedulerService
 	public void everyHour()
 	{
 		log.info("SchedulerService - Running every hour, aktuelle Uhrzeit: {}", ZonedDateTime.now());
+		
+	}
+
+	@Scheduled(cron = "0 0 0,10-23 * * *")
+	public void tenToMidnight()
+	{
+		log.info("SchedulerService - Running ten to midnight, aktuelle Uhrzeit: {}", ZonedDateTime.now());
 		importNewStravaActivities();
 	}
 
@@ -181,7 +188,7 @@ public class SchedulerService
 		String lower = name.trim().toLowerCase(Locale.ROOT);
 		if (lower.matches("^(ride|run|swim|walk|hike|workout|bike ride|mtb ride|mountain bike ride)$")
 			|| lower.matches(
-			"^(morning|afternoon|evening|lunch|night|sunrise|sunset|midday|early morning|late evening|after work|before work|after-work|before-work)[\\s-]+(ride|run|swim|walk|hike|workout)$"))
+			"^(Morgen|Nachmittag|Abend|morning|afternoon|evening|lunch|night|sunrise|sunset|midday|early morning|late evening|after work|before work|after-work|before-work)[\\s-]+(ride|run|swim|walk|hike|workout)$"))
 		{
 			log.info("stavaNameIsOK: Name '{}' is a default Strava name", name);
 			return false;
