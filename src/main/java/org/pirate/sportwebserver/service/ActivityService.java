@@ -225,7 +225,6 @@ public class ActivityService
 			List<Double> velocity = new ArrayList<>();
 			List<List<Double>> latlng = new ArrayList<>();
 
-			int anzahl = 0;
 			for (Map<String, Object> m : results)
 			{
 
@@ -236,10 +235,6 @@ public class ActivityService
 				watts.add(doubleValue(m.get("WATTS")));
 				velocity.add(doubleValue(m.get("SPEED")));
 				latlng.add(coordinates(m.get("LATITUDE"), m.get("LONGITUDE")));
-
-				anzahl++;
-				if (anzahl > 100)
-					break;
 
 			}
 
