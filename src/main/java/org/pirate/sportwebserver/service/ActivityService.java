@@ -1,6 +1,8 @@
 package org.pirate.sportwebserver.service;
 
+import org.pirate.sportwebserver.dto.strava.ActivityStreams;
 import org.pirate.sportwebserver.dto.strava.StravaActivity;
+import org.pirate.sportwebserver.dto.strava.StreamData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,4 +206,65 @@ public class ActivityService
 		return result;
 	}
 
+	public ActivityStreams getActivityStreamById(long tourId)
+	{
+		log.info("ActivityService - Fetching activity stream {} from database", tourId);
+		try
+		{
+			List<Map<String, Object>> results = connectionService.executeQuery(
+				"SELECT TIME, DISTANCE, ALTITUDE, HEARTRATE, WATTS, SPEED, LATITUDE, LONGITUDE "
+					+ "FROM STRAVA_TRACKPOINT WHERE ACTIVITY_ID = " + tourId + " ORDER BY TIME");
+			if (results.isEmpty())
+				return null;
+
+			List<Integer> time = new ArrayList<>();
+			List<Double> distance = new ArrayList<>();
+			List<Double> altitude = new ArrayList<>();
+			List<Integer> heartrate = new ArrayList<>();
+			List<Double> watts = new ArrayList<>();
+			List<Double> velocity = new ArrayList<>();
+			List<List<Double>> latlng = new ArrayList<>();
+
+			int anzahl = 0;
+			for (Map<String, Object> m : results)
+			{
+
+				time.add(integerValue(m.get("TIME")));
+				distance.add(doubleValue(m.get("DISTANCE")));
+				altitude.add(doubleValue(m.get("ALTITUDE")));
+				heartrate.add(integerValue(m.get("HEARTRATE")));
+				watts.add(doubleValue(m.get("WATTS")));
+				velocity.add(doubleValue(m.get("SPEED")));
+				latlng.add(coordinates(m.get("LATITUDE"), m.get("LONGITUDE")));
+
+				anzahl++;
+				if (anzahl > 100)
+					break;
+
+			}
+
+			ActivityStreams streams = new ActivityStreams();
+			streams.setTime(streamData("time", time));
+			streams.setDistance(streamData("distance", distance));
+			streams.setAltitude(streamData("altitude", altitude));
+			streams.setHeartrate(streamData("heartrate", heartrate));
+			streams.setWatts(streamData("watts", watts));
+			streams.setVelocity_smooth(streamData("velocity_smooth", velocity));
+			streams.setLatlng(streamData("latlng", latlng));
+			return streams;
+		}
+		catch (Exception e)
+		{
+			log.error("ActivityService - Error fetching activity stream from database", e);
+			throw new RuntimeException("Failed to fetch activity stream from database", e);
+		}
+	}
+
+	private <T> StreamData<T> streamData(String type, List<T> data)
+	{
+		StreamData<T> sd = new StreamData<>();
+		sd.setType(type);
+		sd.setData(data);
+		return sd;
+	}
 }

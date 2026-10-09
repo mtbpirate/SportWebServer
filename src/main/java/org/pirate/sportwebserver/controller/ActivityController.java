@@ -1,5 +1,6 @@
 package org.pirate.sportwebserver.controller;
 
+import org.pirate.sportwebserver.dto.strava.ActivityStreams;
 import org.pirate.sportwebserver.dto.strava.StravaActivity;
 import org.pirate.sportwebserver.service.ActivityService;
 import org.slf4j.Logger;
@@ -55,6 +56,22 @@ public class ActivityController
 		}
 
 		return ResponseEntity.ok(activity);
+	}
+
+	/**
+	 * Tour nach ID abrufen
+	 */
+	@GetMapping("/activitystream/{tourId}")
+	public ResponseEntity<ActivityStreams> getActivityStreamById(@PathVariable long tourId)
+	{
+		log.info("GET: /api/activitystream/{}", tourId);
+		ActivityStreams activityStream = activityService.getActivityStreamById(tourId);
+		if (activityStream == null)
+		{
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+
+		return ResponseEntity.ok(activityStream);
 	}
 
 }
