@@ -22,47 +22,30 @@ public class HomeAssistantController
 	@Autowired
 	private DbConnectionService connectionService;
 
-	@GetMapping("/km")
-	public ResponseEntity<Map<String, Object>> getDistance()
+	@GetMapping("/radfahrstat")
+	public ResponseEntity<Map<String, Object>> getRadfahrstat()
 	{
-		log.info("GET: /ha/km");
-		float distance = 0.0f;
-		try
-		{
-			List<Map<String, Object>> results = connectionService.executeQuery("SELECT round(SUM(DISTANCE)/1000.0,1) AS DISTANCE FROM STRAVA_ACTIVITY ");
-			if (!results.isEmpty())
-			{
-				Map<String, Object> row = results.get(0);
-				distance = ((Number) row.get("DISTANCE")).floatValue();
-			}
-			else
-			{
-				log.warn("No results returned from query");
-				throw new RuntimeException();
-			}
-
-		}
-		catch (Exception e)
-		{
-			log.error("Error executing query", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-		}
-
-		return ResponseEntity.ok(Map.of("distance", distance));
-	}
-
-	@GetMapping("/hm")
-	public ResponseEntity<Map<String, Object>> getElevation()
-	{
-		log.info("GET: /ha/hm");
+		log.info("GET: /ha/radfahrstat");
 		long elevation = 0L;
+		float distance = 0.0f;
+		float duration = 0.0f;
+
 		try
 		{
-			List<Map<String, Object>> results = connectionService.executeQuery("SELECT round(SUM(TOTAL_ELEVATION_GAIN)) AS ELEVATION FROM STRAVA_ACTIVITY ");
+			String sql = "SELECT \n" +
+				"round(SUM(TOTAL_ELEVATION_GAIN)) AS ELEVATION,\n" +
+				"round(SUM(DISTANCE)/1000.0,1) AS DISTANCE,\n" +
+				"round(sum(ELAPSED_TIME/3600.0),2) AS DAUER\n" +
+				"FROM STRAVA_ACTIVITY	";
+
+			List<Map<String, Object>> results = connectionService.executeQuery(sql);
 			if (!results.isEmpty())
 			{
 				Map<String, Object> row = results.get(0);
 				elevation = ((Number) row.get("ELEVATION")).longValue();
+				distance = ((Number) row.get("DISTANCE")).floatValue();
+				duration = ((Number) row.get("DAUER")).floatValue();
+
 			}
 			else
 			{
@@ -77,7 +60,7 @@ public class HomeAssistantController
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
 		}
 
-		return ResponseEntity.ok(Map.of("elevation", elevation));
+		return ResponseEntity.ok(Map.of("elevation", elevation, "distance", distance, "duration", duration));
 	}
 
 }
