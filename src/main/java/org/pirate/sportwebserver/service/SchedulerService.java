@@ -53,7 +53,7 @@ public class SchedulerService
 		}
 
 		refreshStravaTokenIfNeeded();
-		
+
 		log.info("SchedulerService - Running importNewStravaActivities at startup, aktuelle Uhrzeit: {}", ZonedDateTime.now());
 		importNewStravaActivities();
 		/* verschienene Strava-IDs, die zum Testen verwendet werden können
@@ -152,7 +152,7 @@ public class SchedulerService
 	private void importNewStravaActivities()
 	{
 		log.info("---- Import New Strava Activities -----");
-		long before = Instant.now().minus(1, ChronoUnit.HOURS).getEpochSecond();
+		long before = Instant.now().minus(15, ChronoUnit.MINUTES).getEpochSecond();
 		long after = Instant.now().minus(7, ChronoUnit.DAYS).getEpochSecond();
 
 		List<StravaActivity> activities = stravaService.getActivities(after, before);
